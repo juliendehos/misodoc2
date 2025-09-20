@@ -1,0 +1,35 @@
+cabal-version:      3.0
+name:               misodoc2
+version:            0.1.0.0
+build-type:         Simple
+
+executable app
+  hs-source-dirs:
+    src
+  default-language:
+    GHC2021
+  default-extensions:
+    TemplateHaskell
+
+  if arch(wasm32)
+
+    main-is:
+      client.hs
+    other-modules:
+      App.Action App.Component App.Model App.Routes App.Update App.View Domain.Hero Server.Api
+    build-depends: 
+      aeson, base, miso, network-uri, servant, servant-miso-router
+    ghc-options:
+      -Wall -O2 -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start" -ddump-splices
+
+  else
+
+    main-is:
+      server.hs
+    other-modules:
+      App.Action App.Component App.Model App.Routes App.Update App.View Domain.Hero Server.Api
+    build-depends: 
+      aeson, base, miso, network-uri, optparse-applicative, servant, servant-miso-html, servant-miso-router, servant-server, wai-extra, warp, wai, wai-app-static, http-types
+    ghc-options:
+      -Wall -O2 -ddump-splices
+
