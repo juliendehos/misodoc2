@@ -10,7 +10,6 @@ data Action
     | ActionSetUri URI
     | ActionPopHeroes
     | ActionError MisoString
-    | ActionFetchFail
     | ActionFetchHeroes
     | ActionSetHeroes [Hero]
     deriving (Eq)

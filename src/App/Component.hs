@@ -10,7 +10,7 @@ import App.Action (Action(..))
 import App.Model (Model(..), mkModel)
 import App.Routes (ClientRoutes)
 import App.Update (updateModel)
-import App.View (viewHome, viewAbout, view404)
+import App.View (viewHome, view404)
 
 type HeroesComponent = App Model Action
 
@@ -33,6 +33,5 @@ componentApp currentUri = component initialModel updateModel viewModel
 
     clientHandlers
       =    viewHome
-      :<|> viewAbout
       :<|> view404
 

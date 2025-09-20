@@ -21,7 +21,7 @@ import Servant.Miso.Html
 
 import App.Component (HeroesComponent, heroesComponent)
 import App.Model (Model)
-import App.Routes (Routes, uriHome, uriAbout, uri404)
+import App.Routes (Routes, uriHome, uri404)
 import Domain.Hero (Hero(..))
 import Server.Api (PublicApi, mkStaticUri)
 
@@ -56,7 +56,6 @@ newtype Page = Page HeroesComponent
 handleClientRoutes :: Server ClientRoutesServer
 handleClientRoutes 
   =    pure (Page $ heroesComponent uriHome)
-  :<|> pure (Page $ heroesComponent uriAbout)
   :<|> pure (Page $ heroesComponent uri404)
 
 handle404 :: Application

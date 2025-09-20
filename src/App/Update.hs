@@ -30,9 +30,6 @@ updateModel ActionPopHeroes = do
 updateModel (ActionError str) =
   modelError .= str
 
-updateModel ActionFetchFail =
-  getJSON "fail" [] ActionSetHeroes ActionError
-
 updateModel ActionFetchHeroes =
   getJSON (prettyURI uriHeroes) [] ActionSetHeroes ActionError
 

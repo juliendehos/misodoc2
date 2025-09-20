@@ -10,7 +10,7 @@ import Miso.Html.Property as P
 
 import App.Action (Action(..))
 import App.Model (Model(..))
-import App.Routes (uriHome, uriAbout)
+import App.Routes (uriHome)
 import Domain.Hero (Hero(..))
 import Server.Api (mkStaticUri)
 
@@ -19,32 +19,10 @@ mkView :: Model -> View Model Action -> View Model Action
 mkView Model{..} content =
   div_
     []
-    [ p_ []
-        [ button_ [ onClick (ActionPushUri uriHome) ] [ "home" ]
-        , button_ [ onClick (ActionPushUri uriAbout) ] [ "about" ]
-        ]
-    , h1_ [] [ "Heroes" ]
+    [ h1_ [] [ "Heroes" ]
     , content
     , p_ [] [ text _modelError ]
     ]
-
-viewAbout :: Model -> View Model Action
-viewAbout m = 
-  mkView  m $
-    div_ 
-      []
-      [ h2_ [] [ "About" ]
-      , p_ 
-          []
-          [ "Simple isomorphic web app using "
-          , a_ [ href_ "https://github.com/dmjio/miso"] [ "Miso" ]
-          , "."
-          , br_ []
-          , "See the "
-          , a_ [ href_ "https://github.com/juliendehos/heroes"] [ "source code" ]
-          , "."
-          ]
-      ]
 
 viewHome :: Model -> View Model Action
 viewHome m@Model{..} =
@@ -53,8 +31,7 @@ viewHome m@Model{..} =
       []
       [ h2_ [] [ "Home" ]
       , p_ []
-          [ button_ [ onClick ActionFetchFail ] [ "fetch fail" ]
-          , button_ [ onClick ActionFetchHeroes ] [ "fetch heroes" ]
+          [ button_ [ onClick ActionFetchHeroes ] [ "fetch heroes" ]
           , button_ [ onClick ActionPopHeroes ] [ "pop heroes" ]
           ]
       , ul_ [] (map fmtHero _modelHeroes)
