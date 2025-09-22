@@ -16,7 +16,6 @@ executable app
     main-is:
       client.hs
     other-modules:
-      Api
       Component
       FFI
       Markdown
@@ -43,7 +42,6 @@ executable app
     main-is:
       server.hs
     other-modules:
-      Api
       Component
       FFI
       Markdown

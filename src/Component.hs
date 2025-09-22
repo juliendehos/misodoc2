@@ -1,252 +1,102 @@
-{-# LANGUAGE LambdaCase #-}
-{-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module Component (mkComponent) where
+module Component where
 
-import Data.Maybe (isNothing)
+import Data.Proxy
 import Miso
-import Miso.CSS qualified as CSS
 import Miso.Lens
-import Miso.Html.Element as H
-import Miso.Html.Event as E
-import Miso.Html.Property as P
-import Text.Pandoc.Definition (MathType)
+import Miso.Html.Element as H 
+-- import Miso.Html.Event as E
+-- import Miso.Html.Property as P
+-- import Miso.Router (prettyURI)
+import Servant.API hiding (URI)
+import Servant.Links hiding (URI)
+import Servant.Miso.Router
 
-import FFI
-import Markdown
+
 import Model
 
 -------------------------------------------------------------------------------
--- action
+-- Routes
+-------------------------------------------------------------------------------
+
+type RouteHome a = Capture "filename" MisoString :> a
+type Route404 a = "404" :> a
+
+type Routes a = RouteHome a :<|> Route404 a
+
+type ClientRoutes = Routes (View Model Action)
+
+uriHome :: MisoString -> URI
+uri404 :: URI
+uriHome :<|> uri404 = allLinks' toMisoURI (Proxy @ClientRoutes)
+
+-------------------------------------------------------------------------------
+-- Action
 -------------------------------------------------------------------------------
 
 data Action
-  = ActionSwitchSummary
-  | ActionRenderCode DOMRef
-  | ActionRenderMath MathType DOMRef
-  | ActionScrollToTop
+    = ActionPushUri URI
+    | ActionSetUri URI
+    deriving (Eq)
 
 -------------------------------------------------------------------------------
--- update
+-- Update
 -------------------------------------------------------------------------------
 
 updateModel :: Action -> Transition Model Action
 
-updateModel ActionSwitchSummary =
-  modelShowSummary %= not
+updateModel (ActionPushUri u) = do
+  io_ (pushURI u)
+  modelError .= ""
 
-updateModel (ActionRenderCode domref) = 
-  io_ (renderCode domref)
-
-updateModel (ActionRenderMath mathtype domref) =
-  io_ (renderMath mathtype domref)
-
-updateModel ActionScrollToTop =
-  io_ scrollToTop
+updateModel (ActionSetUri u) = do
+  modelUri .= u
+  modelError .= ms u
 
 -------------------------------------------------------------------------------
--- view
+-- View
 -------------------------------------------------------------------------------
 
-viewModel :: Model -> View Model Action
-viewModel m@Model{..} =
-  div_ [ CSS.style_ [ CSS.display "flex", CSS.flexDirection "row" ] ]
-    [ if _modelShowSummary then viewSummary m else span_ [] []
-    , if isNothing _modelError then viewPage m else viewError m
-    ]
-
-viewSummary :: Model -> View Model Action
-viewSummary Model{..} = 
+viewHome :: MisoString -> Model -> View Model Action
+viewHome todo m@Model{..} =
   div_ 
-    [ CSS.style_ 
-        [ CSS.paddingRight "10px"
-        , CSS.minWidth "220px"
-        , CSS.maxWidth "220px" ]
-        ]
-    [ renderNodes formatter _modelChapters _modelSummary
-    , viewDebug
-    ]
-  where
-    viewDebug = 
-      div_ [] $ if _modelShowDebug
-        then
-          [ hr_ []
-          , p_ []
-              [ "chapter links:"
-              , ul_ [] (fmap (\u -> li_ [] [ text u]) _modelChapters)
-              , text ("current: " <> _modelCurrent)
-              ]
-          , hr_ []
-          , p_ [] [ renderRaw _modelSummary ]
-          ]
-        else []
-
-viewPage :: Model -> View Model Action
-viewPage m@Model{..} = 
-  div_ 
-    [ CSS.style_ 
-        [ CSS.maxWidth "800px"
-        ]
-    ]
-    [ viewTop
-    , renderNodes formatter _modelChapters _modelPage
-    , hr_ []
-    , viewNav m
-    , viewDebug
-    ]
-  where
-
-    viewDebug = 
-      div_ [] $ if _modelShowDebug && not (null _modelPage)
-        then
-          [ hr_ []
-          , p_ [] [ renderRaw _modelPage ]
-          ]
-        else 
-          []
-
-    viewTop = 
-      div_ []
-        [ mkLink ActionSwitchSummary [ img_ [ src_ "icon-toc.jpg", height_ "20" ] ]
-        , " "
-        , mkLink ActionSwitchDebug [ img_ [ src_ "icon-bug.jpg", height_ "20" ] ]
-        , span_ 
-            [ CSS.style_ 
-              [ CSS.fontWeight "bold"
-              , CSS.fontSize "16pt"
-              , CSS.paddingLeft "10px"
-              ]
-            ]
-            [ text docTitle ]
-        , hr_ []
-        ]
-
-viewError :: Model -> View Model Action
-viewError Model{..} = 
-  div_ [] 
-      [ h2_ [] [ text errorType ]
-      , pre_ 
-          [ CSS.style_ 
-              [ CSS.backgroundColor CSS.lightpink
-              , CSS.padding "20px"
-              , CSS.border "1px solid black"
-              ]
-          ]
-          [ text errorMsg ]
-      ]
-  where
-    (errorType, errorMsg) = case _modelError of
-      Just (FetchError fp msg) -> ("Fetch error: " <> fp, msg)
-      Just (ParseError msg) -> ("Parse error", msg)
-      Nothing -> ("no error", "no error")
-
-viewNav :: Model -> View Model Action
-viewNav Model{..} = 
-  p_ [] 
-    [ fmtImg "icon-left.jpg" "icon-left-ko.jpg" mPrev
-    , " "
-    , img_ [ src_ "icon-top.jpg", height_ "20", onClick ActionScrollToTop ]
-    , " "
-    , fmtImg "icon-right.jpg" "icon-right-ko.jpg" mNext
-    ]
-  where
-
-    (mPrev, mNext) = getPreviousNext _modelChapters _modelCurrent
-
-    fmtImg imgOk imgKo = \case
-      Nothing -> img_ [ src_ imgKo, height_ "20" ]
-      (Just x) -> img_ [ src_ imgOk, height_ "20", onClick (ActionAskPage x) ]
-
-
-formatter :: Formatter Model Action
-formatter = Formatter
-  { _fmtChapterLink = mkLink . ActionAskPage . ms
-  , _fmtCodeBlock = \langClass ns ->
-      pre_ 
-        [ class_ langClass
-        , onCreatedWith_ ActionRenderCode 
-        , CSS.style_
-            [ CSS.border "1px solid black"
-            , CSS.padding "10px"
-            , CSS.backgroundColor #EEEEEE
-            ]
-        ]
-        [ code_ [] ns ]
-  , _fmtMath = \mt ns ->
-      span_ 
-        [ onCreatedWith_ (ActionRenderMath mt) ]
-        ns
-  }
-
-mkLink :: action -> [View model action] -> View model action
-mkLink action =
-  a_ 
-    [ onClick action
-    , CSS.style_ 
-      [ CSS.textDecoration "underline blue"
-      , CSS.color CSS.blue
-      , CSS.cursor "pointer" 
-      ]
+    []
+    [ h2_ [] [ "Misodoc2" ]
+    , p_ [] [ text _modelError ]
+    , p_ [] [ text todo ]
     ]
 
-blockquoteStyle :: CSS
-blockquoteStyle = Sheet $ CSS.sheet_
-  [ CSS.selector_ "blockquote"
-    [ CSS.border "1px solid black"
-    , CSS.padding "10px"
-    , CSS.backgroundColor CSS.lightyellow
-    ]
-  ]
-
-codeStyle :: CSS
-codeStyle = Sheet $ CSS.sheet_
-  [ CSS.selector_ "pre"
-    [ CSS.border "1px solid black"
-    , CSS.padding "10px"
-    , CSS.backgroundColor #EEEEEE
-    ]
-  , CSS.selector_ "code.inlinecode"
-    [ CSS.backgroundColor #EEEEEE
-    ]
-  ]
-
-tableStyle :: CSS
-tableStyle = Sheet $ CSS.sheet_
-  [ CSS.selector_ "table, th, td"
-    [ CSS.border "1px solid black"
-    , CSS.borderCollapse "collapse"
-    ]
-  , CSS.selector_ "th, td"
-    [ CSS.paddingLeft "10px"
-    , CSS.paddingRight "10px"
-    ]
-  ]
-
-docTitle :: MisoString
-docTitle = "MisoDoc"
+view404 :: MisoString -> Model -> View Model Action
+view404 s m =
+  div_
+    []
+    [ "page not found" ]
 
 -------------------------------------------------------------------------------
--- component
+-- Component
 -------------------------------------------------------------------------------
 
-mkComponent :: App Model Action
-mkComponent = 
-  (component mkModel updateModel viewModel)
-    { initialAction = Just (ActionAskSummary "summary.md")
-    , styles = 
-      [ Href "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css"
-      -- , Href "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css"
-      , Href "github.min.css"
-      , blockquoteStyle
-      , codeStyle
-      , tableStyle
-      ]
-    , scripts = 
-        [ Src "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"
-        -- , Src "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"
-        , Src "highlight.min.js"
-        ]
+type AppComponent = App Model Action
+
+appComponent :: URI -> AppComponent
+appComponent uri =
+  (component initialModel updateModel viewModel)
+    { subs = [ uriSub ActionSetUri ]
+    , logLevel = DebugAll
     }
+
+  where
+    initialModel = mkModel uri
+
+    viewModel m =
+        case route (Proxy @ClientRoutes) clientHandlers _modelUri m of
+          Left _ -> view404 "" m
+          Right v -> v
+
+    clientHandlers str
+      =    viewHome str
+      :<|> view404 str
 
