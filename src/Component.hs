@@ -40,7 +40,7 @@ uriHome :<|> uri404 =
 -------------------------------------------------------------------------------
 
 type StaticApi = "public" :> Raw
-type NodesApi = "nodes" :> Get '[JSON] [Node]
+type NodesApi = "nodes" :> Capture "filename" FilePath :> Get '[JSON] [Node]
 type FilesApi = "files" :> Raw
 
 type ServerApi
@@ -48,13 +48,14 @@ type ServerApi
   :<|> NodesApi
   :<|> FilesApi
 
-uriStatic, uriNodes, uriFiles :: URI
+uriStatic, uriFiles :: URI
+uriNodes :: FilePath -> URI
 uriStatic :<|> uriNodes :<|> uriFiles = 
   allLinks' toMisoURI (Proxy @ServerApi)
 
 mkStaticUri, mkNodesUri, mkFilesUri :: MisoString -> MisoString
 mkStaticUri filename = prettyURI uriStatic <> "/" <> filename
-mkNodesUri filename = prettyURI uriNodes <> "/" <> filename
+mkNodesUri filename = prettyURI (uriNodes $ fromMisoString filename) <> "/" <> filename
 mkFilesUri filename = prettyURI uriFiles <> "/" <> filename
 
 -------------------------------------------------------------------------------
@@ -90,7 +91,6 @@ viewHome Model{..} =
     []
     [ h2_ [] [ "Misodoc2 home" ]
     , p_ [] [ text _modelError ]
-    , p_ [] [ text _modelData ]
     ]
 
 view404 :: Model -> View Model Action
@@ -105,15 +105,15 @@ view404 _ =
 
 type AppComponent = App Model Action
 
-appComponent :: MisoString -> URI -> AppComponent
-appComponent d uri =
+appComponent :: URI -> AppComponent
+appComponent uri =
   (component initialModel updateModel viewModel)
     { subs = [ uriSub ActionSetUri ]
     , logLevel = DebugAll
     }
 
   where
-    initialModel = mkModel d uri 
+    initialModel = emptyModel uri 
 
     viewModel m =
         case route (Proxy @ClientRoutes) clientHandlers _modelUri m of

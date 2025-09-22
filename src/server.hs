@@ -5,6 +5,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 import Control.Monad (join)
+import Control.Monad.IO.Class (liftIO, MonadIO)
 import Miso hiding (run)
 import Miso.Html.Render
 import Miso.Html.Element as H
@@ -21,6 +22,7 @@ import Servant
 import Servant.Miso.Html
 
 import Component 
+import Markdown
 import Model
 
 -------------------------------------------------------------------------------
@@ -33,8 +35,8 @@ type ClientRoutesServer = Routes (Get '[HTML] Page)
 
 handleClientRoutes :: Server ClientRoutesServer
 handleClientRoutes 
-  =    pure (Page $ appComponent " " uriHome)
-  :<|> pure (Page $ appComponent " " uri404)
+  =    pure (Page $ appComponent uriHome)
+  :<|> pure (Page $ appComponent uri404)
 
 -------------------------------------------------------------------------------
 -- handle Server API
@@ -43,8 +45,13 @@ handleClientRoutes
 handleServerApi :: Server ServerApi
 handleServerApi 
   =    serveDirectoryWith (defaultWebAppSettings "public")
-  :<|> pure []    -- TODO
+  :<|> handleNodes
   :<|> serveDirectoryWith (defaultWebAppSettings "book")
+
+handleNodes :: MonadIO m => FilePath -> m [Node]
+handleNodes fp = do
+  liftIO $ print fp
+  pure []
 
 -------------------------------------------------------------------------------
 -- handle full API
@@ -60,7 +67,7 @@ handle404 _ respond' =
   respond' $
     responseLBS status404 [("Content-Type", "text/html")] $
       toHtml $
-        Page (appComponent " " uri404)
+        Page (appComponent uri404)
 
 -------------------------------------------------------------------------------
 -- server rendering
