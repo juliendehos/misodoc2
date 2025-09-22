@@ -19,35 +19,22 @@ import Options.Applicative
 import Servant
 import Servant.Miso.Html
 
-import App.Component (HeroesComponent, heroesComponent)
-import App.Model (Model)
-import App.Routes (Routes, uriHome, uri404)
-import Domain.Hero (Hero(..))
-import Server.Api (PublicApi, mkStaticUri)
-
--------------------------------------------------------------------------------
--- server data
--------------------------------------------------------------------------------
-
-heroes :: [Hero]
-heroes = 
-    [ Hero "Scooby Doo" "scoobydoo.png"
-    , Hero "Sponge Bob" "spongebob.png"
-    ]
+import Component -- (HeroesComponent, heroesComponent)
+import Model (Model)
+-- import App.Routes (Routes, uriHome, uri404)
+import Api -- (PublicApi, mkStaticUri)
 
 -------------------------------------------------------------------------------
 -- server routing
 -------------------------------------------------------------------------------
 
-handlePublicApi :: Server PublicApi
-handlePublicApi 
-  =    serveDirectoryWith (defaultWebAppSettings "public")
-  :<|> pure heroes
+handleApi :: Server Api
+handleApi = serveDirectoryWith (defaultWebAppSettings "public")
 
 type ClientRoutesServer = Routes (Get '[HTML] Page)
 
 type ServerApi
-  =    PublicApi
+  =    Api
   :<|> ClientRoutesServer
   :<|> Raw
 
@@ -74,17 +61,17 @@ instance ToHtml Page where
     toHtml
       [ doctype_
       , html_
-        [ lang_ "en" ]
+        []
         [ head_ 
-          [ P.title_ "Heroes" ]
+          [ P.title_ "Misodoc2" ]
           [ meta_ [ charset_ "utf-8" ]
-          , meta_ [ name_ "viewport" , content_ "width=device-width, initial-scale=1" ]
+          , meta_ [ name_ "viewport", content_ "width=device-width, initial-scale=1" ]
           , link_
             [ rel_ "icon"
-            , href_ (mkStaticUri "favicon.ico")
+            , href_ (mkAppUri "favicon.ico")
             , type_ "image/x-icon"
             ]
-          , script_ [ src_ (mkStaticUri "index.js"), type_ "module" ] ""
+          , script_ [ src_ (mkAppUri "index.js"), type_ "module" ] ""
           , body_ [] [toView @Model x]
           ]
         ]
@@ -104,18 +91,18 @@ serverApp = serve (Proxy @ServerApi) serverHandlers
 
 data ServerArgs = ServerArgs
   { _port :: Int
-  , _mdPath :: FilePath
+  , _bookPath :: FilePath
   }
 
 serverArgsP :: Parser ServerArgs
 serverArgsP = ServerArgs
   <$> option auto (long "port" <> value 3000 <> metavar "PORT")
-  <*> argument str (metavar "MD_PATH")
+  <*> argument str (metavar "BOOK_PATH")
 
 runServer :: ServerArgs -> IO ()
 runServer ServerArgs{..} = do
   putStrLn $ "PORT: " <> show _port 
-  putStrLn $ "MD_PATH: " <> _mdPath 
+  putStrLn $ "BOOK_PATH: " <> _bookPath 
   putStrLn "Running..."
   run _port $ logStdout $ compress serverApp
   where

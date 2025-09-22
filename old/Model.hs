@@ -6,11 +6,8 @@ import Miso
 import Miso.Lens
 import Miso.Lens.TH
 
-import Domain.Hero (Hero)
-
 data Model = Model
-  { _modelHeroes :: [Hero]
-  , _modelError :: MisoString
+  { _modelError :: MisoString
   , _modelUri :: URI
   } deriving (Eq)
 

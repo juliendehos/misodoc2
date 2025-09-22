@@ -1,10 +1,13 @@
+{-# LANGUAGE CPP #-}
 
-import Miso (miso, run)
+import Miso
 
-import App.Component (heroesComponent)
-
-foreign export javascript "hs_start" main :: IO ()
+import Component
 
 main :: IO ()
-main = run (miso heroesComponent)
+main = run (miso (const mkComponent))
+
+#ifdef WASM
+foreign export javascript "hs_start" main :: IO ()
+#endif
 

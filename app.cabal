@@ -16,20 +16,57 @@ executable app
     main-is:
       client.hs
     other-modules:
-      App.Action App.Component App.Model App.Routes App.Update App.View Domain.Hero Server.Api
+      Api
+      Component
+      FFI
+      Markdown
+      Model
     build-depends: 
-      aeson, base, miso, network-uri, servant, servant-miso-router
+      aeson,
+      base,
+      commonmark,
+      commonmark-simple,
+      jsaddle,
+      miso,
+      network-uri,
+      pandoc-types,
+      servant,
+      servant-miso-router,
+      text
     ghc-options:
       -Wall -O2 -no-hs-main -optl-mexec-model=reactor "-optl-Wl,--export=hs_start" -ddump-splices
+    cpp-options:
+      -DWASM
 
   else
 
     main-is:
       server.hs
     other-modules:
-      App.Action App.Component App.Model App.Routes App.Update App.View Domain.Hero Server.Api
+      Api
+      Component
+      FFI
+      Markdown
+      Model
     build-depends: 
-      aeson, base, miso, network-uri, optparse-applicative, servant, servant-miso-html, servant-miso-router, servant-server, wai-extra, warp, wai, wai-app-static, http-types
+      aeson,
+      base,
+      commonmark,
+      commonmark-simple,
+      http-types,
+      jsaddle,
+      miso,
+      network-uri,
+      optparse-applicative,
+      pandoc-types,
+      servant,
+      servant-miso-html,
+      servant-miso-router,
+      servant-server,
+      text,
+      wai-extra,
+      warp, wai,
+      wai-app-static
     ghc-options:
       -Wall -O2 -ddump-splices
 
