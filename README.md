@@ -5,43 +5,23 @@ Work in progress
 TODO
 
 
-## Try using docker:
-
-```
-docker run --rm -it -p 3000:3000 juliendehos/misodoc2:latest
-```
-
-Then go to `localhost:3000`.
-
-
-## Build and run:
+## Build and run server:
 
 ```
 nix develop .#wasm  --command bash -c "make"
-nix develop --command bash -c "cabal update && cabal build"
+nix develop --command bash -c "cabal run app -- serve --port 3000 book"
 ```
 
-
-## Build and deploy in a `output` folder:
-
-```
-./build.sh
-cd output
-./app
-```
-
-
-## build a docker image:
+## Build and render static files:
 
 ```
-./build-docker.sh
+nix develop --command bash -c "cabal run app -- render book output"
 ```
-
 
 ## edit using vscode
 
 ```
-nix-shell app-server.nix
+nix-shell
 code .
 ```
 
