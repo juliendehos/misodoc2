@@ -33,6 +33,7 @@ type Route404 a = "404" :> a
 
 type Routes a
   =    RouteHome a
+  -- TODO :<|> RouteError a
   :<|> Route404 a
 
 type ClientRoutes = Routes (View Model Action)
