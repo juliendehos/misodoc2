@@ -9,7 +9,7 @@ import Miso.Lens.TH
 import Markdown
 
 data Model = Model
-  { _modelError       :: MisoString
+  { _modelError       :: Maybe MisoString
   , _modelCurrent     :: MisoString
   , _modelShowSummary :: Bool
   , _modelChapters    :: [MisoString]
@@ -22,7 +22,7 @@ makeLenses ''Model
 
 -- warning: an empty would cause hydration to fail
 mkModel :: [MisoString] -> [Node] -> [Node] -> URI -> Model
-mkModel = Model " " " " True
+mkModel = Model Nothing " " True
 
 emptyModel :: URI -> Model
 emptyModel = mkModel [] [] []
