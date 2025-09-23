@@ -6,7 +6,7 @@
 
 module Component where
 
-import Data.Maybe (isNothing)
+import Data.Maybe (isNothing, fromMaybe)
 import Data.Proxy
 import Miso
 import Miso.CSS qualified as CSS
@@ -134,7 +134,7 @@ updateModel (ActionSetSummary fp rep) = do
           issue $ ActionAskPage c
 
 updateModel (ActionFetchError fp rep) = do
-  let msg = ms ("errorMessage: " <> show (errorMessage rep) <> "\nbody: " <> show (body rep))
+  let msg = fromMaybe "" (errorMessage rep) <> body rep
   modelError ?= FetchError fp msg
 
 -------------------------------------------------------------------------------
@@ -196,7 +196,7 @@ viewPage m@Model{..} =
 viewError :: Model -> View Model Action
 viewError Model{..} = 
   div_ [] 
-      [ h2_ [] [ "Error:" ]
+      [ h2_ [] [ "Error" ]
       , pre_ 
           [ CSS.style_ 
               [ CSS.backgroundColor CSS.lightpink
@@ -204,7 +204,7 @@ viewError Model{..} =
               , CSS.border "1px solid black"
               ]
           ]
-          [ text (maybe "" (ms . show) _modelError) ]
+          [ text (maybe "" ms _modelError) ]
       ]
 
 viewNav :: Model -> View Model Action
