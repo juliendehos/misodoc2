@@ -11,16 +11,14 @@ update:
 
 build:
 	wasm32-wasi-cabal build app
-	rm -rf public
-	cp -r static public
 	$(eval my_wasm=$(shell wasm32-wasi-cabal list-bin app | tail -n 1))
-	$(shell wasm32-wasi-ghc --print-libdir)/post-link.mjs --input $(my_wasm) --output public/ghc_wasm_jsffi.js
-	cp -v $(my_wasm) public/
+	$(shell wasm32-wasi-ghc --print-libdir)/post-link.mjs --input $(my_wasm) --output server/ghc_wasm_jsffi.js
+	cp -v $(my_wasm) server/
 
 optim:
-	wasm-opt -all -O2 public/app.wasm -o public/app.wasm
-	wasm-tools strip -o public/app.wasm public/app.wasm
+	wasm-opt -all -O2 server/app.wasm -o server/app.wasm
+	wasm-tools strip -o server/app.wasm server/app.wasm
 
 clean:
-	rm -rf dist-newstyle public output
+	rm -rf dist-newstyle output server/ghc_wasm_jsffi.js server/app.wasm
 
