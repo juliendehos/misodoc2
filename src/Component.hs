@@ -6,7 +6,7 @@
 
 module Component where
 
-import Data.Maybe (isNothing, fromMaybe)
+import Data.Maybe (isNothing)
 import Data.Proxy
 import Miso
 import Miso.CSS qualified as CSS
@@ -14,7 +14,6 @@ import Miso.Lens
 import Miso.Html.Element as H 
 import Miso.Html.Event as E
 import Miso.Html.Property as P
-import Miso.Router (URI(..))
 import Servant.API hiding (URI(..))
 import Servant.Links hiding (URI(..))
 import Servant.Miso.Router
@@ -33,7 +32,6 @@ type Route404 a = "404" :> a
 
 type Routes a
   =    RouteHome a
-  -- TODO :<|> RouteError a
   :<|> Route404 a
 
 type ClientRoutes = Routes (View Model Action)
@@ -46,24 +44,21 @@ uriHome :<|> uri404 =
 -- Server API
 -------------------------------------------------------------------------------
 
-type StaticApi = "public" :> Raw
-type NodesApi = "nodes" :> Capture "filename" FilePath :> Get '[JSON] [Node]
-type FilesApi = "files" :> Raw
+type AppApi = "server" :> Raw
+type BookApi = Raw
 
 type ServerApi
-  =    StaticApi
-  :<|> NodesApi
-  :<|> FilesApi
+  =    AppApi
+  :<|> BookApi
 
-uriStatic, uriFiles :: URI
-uriNodes :: FilePath -> URI
-uriStatic :<|> uriNodes :<|> uriFiles = 
+uriApp, uriBook :: URI
+uriApp :<|> uriBook = 
   allLinks' toMisoURI (Proxy @ServerApi)
 
-mkStaticUri, mkNodesUri, mkFilesUri :: MisoString -> MisoString
-mkStaticUri filename = uriPath uriStatic <> "/" <> filename
-mkNodesUri filename = uriPath (uriNodes $ fromMisoString filename)
-mkFilesUri filename = uriPath uriFiles <> "/" <> filename
+mkAppUri, mkBookUri, mkStaticUri :: MisoString -> MisoString
+mkAppUri filename   = uriPath uriApp <> "/" <> filename
+mkBookUri filename  = uriPath uriBook <> "/" <> filename
+mkStaticUri filename  = "static/" <> filename
 
 -------------------------------------------------------------------------------
 -- Action
@@ -77,64 +72,68 @@ data Action
   | ActionRenderMath MathType DOMRef
   | ActionScrollToTop
   | ActionAskPage MisoString
-  | ActionSetPage MisoString (Response [Node])
+  | ActionSetPage MisoString (Response MisoString)
   | ActionAskSummary MisoString
-  | ActionSetSummary MisoString (Response [Node])
+  | ActionSetSummary MisoString (Response MisoString)
   | ActionFetchError MisoString (Response MisoString)
 
 -------------------------------------------------------------------------------
 -- Update
 -------------------------------------------------------------------------------
 
+headerNoCache :: (MisoString, MisoString)
+headerNoCache = ("Cache-Control", "no-cache")
+
 updateModel :: Action -> Transition Model Action
 
 updateModel (ActionPushUri u) = do
   io_ (pushURI u)
-  io_ (consoleLog $ ms u)
-  modelError ?= ""
 
 updateModel (ActionSetUri u) = do
   modelUri .= u
-  io_ (consoleLog $ ms u)
-  modelError ?= ms u
 
-updateModel ActionSwitchSummary =
+updateModel ActionSwitchSummary = do
   modelShowSummary %= not
 
-updateModel (ActionRenderCode domref) = 
+updateModel (ActionRenderCode domref) = do
   io_ (renderCode domref)
 
-updateModel (ActionRenderMath mathtype domref) =
+updateModel (ActionRenderMath mathtype domref) = do
   io_ (renderMath mathtype domref)
 
-updateModel ActionScrollToTop =
+updateModel ActionScrollToTop = do
   io_ scrollToTop
 
-updateModel (ActionAskPage fp) =
-  getJSON fp [] (ActionSetPage fp) (ActionFetchError fp)
-  -- getJSON fp [headerNoCache] (ActionSetPage fp) (ActionFetchError fp)
+updateModel (ActionAskPage fp) = do
+  getText fp [headerNoCache] (ActionSetPage fp) (ActionFetchError fp)
 
 updateModel (ActionSetPage fp rep) = do
   modelCurrent .= fp
-  modelPage .= body rep
   io_ scrollToTop
+  case parseNodes fp (body rep) of
+    Left err -> modelError ?= ParseError fp err
+    Right ns -> do
+      modelPage .= ns
+      modelError .= Nothing
 
 updateModel (ActionAskSummary fp) = do
-  io_ (consoleLog $ ms fp)
-  getJSON fp [] (ActionSetSummary fp) (ActionFetchError fp)
+  getText fp [headerNoCache] (ActionSetSummary fp) (ActionFetchError fp)
 
 updateModel (ActionSetSummary fp rep) = do
-  let nodes = body rep
-  modelSummary .= nodes
-  case getChapters nodes of
-    [] -> pure ()
-    chapters@(c:_) -> do
-      modelChapters .= chapters
-      issue $ ActionAskPage c
+  case parseNodes fp (body rep) of
+    Left err -> modelError ?= ParseError fp err
+    Right ns -> do
+      modelSummary .= ns
+      modelError .= Nothing
+      case getChapters ns of
+        [] -> pure ()
+        chapters@(c:_) -> do
+          modelChapters .= chapters
+          issue $ ActionAskPage c
 
 updateModel (ActionFetchError fp rep) = do
   let msg = ms ("errorMessage: " <> show (errorMessage rep) <> "\nbody: " <> show (body rep))
-  modelError ?= "fetch error in " <> fp <> ":\n" <> msg
+  modelError ?= FetchError fp msg
 
 
 -------------------------------------------------------------------------------
@@ -204,7 +203,7 @@ viewError Model{..} =
               , CSS.border "1px solid black"
               ]
           ]
-          [ text (fromMaybe "" _modelError) ]
+          [ text (maybe "" (ms . show) _modelError) ]
       ]
 
 viewNav :: Model -> View Model Action
@@ -315,7 +314,7 @@ appComponent uri =
         -- , Src "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"
         , Src (mkStaticUri "highlight.min.js")
         ]
-    , initialAction = Just (ActionAskSummary (mkNodesUri "summary.md"))
+    , initialAction = Just (ActionAskSummary (mkBookUri "summary.md"))
     , logLevel = DebugAll
     }
 

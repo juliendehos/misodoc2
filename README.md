@@ -4,18 +4,22 @@ Work in progress
 
 TODO
 
+- render to static files
+- improve error handling
+- README
+
 
 ## Build and run server:
 
 ```
 nix develop .#wasm  --command bash -c "make"
-nix develop --command bash -c "cabal run app -- serve --port 3000 book"
+nix develop --command bash -c "cabal run app -- serve --port 3000"
 ```
 
 ## Build and render static files:
 
 ```
-nix develop --command bash -c "cabal run app -- render book output"
+nix develop --command bash -c "cabal run app -- render --output output"
 ```
 
 ## edit using vscode

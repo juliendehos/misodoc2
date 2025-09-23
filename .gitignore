@@ -1,5 +1,5 @@
 dist-newstyle
-public
 output
-result
+server/ghc_wasm_jsffi.js
+server/app.wasm
 

@@ -8,8 +8,21 @@ import Miso.Lens.TH
 
 import Markdown
 
+-------------------------------------------------------------------------------
+-- MyError
+-------------------------------------------------------------------------------
+
+data MyError
+  = FetchError MisoString MisoString  -- filename, fetch error
+  | ParseError MisoString MisoString  -- filename, parse error
+  deriving (Eq, Show)
+
+-------------------------------------------------------------------------------
+-- Model
+-------------------------------------------------------------------------------
+
 data Model = Model
-  { _modelError       :: Maybe MisoString
+  { _modelError       :: Maybe MyError
   , _modelCurrent     :: MisoString
   , _modelShowSummary :: Bool
   , _modelChapters    :: [MisoString]

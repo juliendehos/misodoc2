@@ -5,8 +5,6 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 import Control.Monad (join)
-import Control.Monad.IO.Class (liftIO, MonadIO)
-import Data.Text.IO qualified as T
 import Miso hiding (run)
 import Miso.Html.Render
 import Miso.Html.Element as H
@@ -23,7 +21,6 @@ import Servant
 import Servant.Miso.Html
 
 import Component 
-import Markdown
 import Model
 
 -------------------------------------------------------------------------------
@@ -45,27 +42,16 @@ handleClientRoutes
 
 handleServerApi :: Server ServerApi
 handleServerApi 
-  =    serveDirectoryWith (defaultWebAppSettings "public")
-  :<|> handleNodes
+  =    serveDirectoryWith (defaultWebAppSettings "server")
   :<|> serveDirectoryWith (defaultWebAppSettings "book")
-
-handleNodes :: MonadIO m => FilePath -> m [Node]
-handleNodes fp = do
-  let path = "book/" <> fp
-  contents <- liftIO $ T.readFile path
-  case parseNodes (ms path) (ms contents) of
-    Left err -> do
-      liftIO $ T.putStrLn $ "Parsing error: " <> fromMisoString err
-      pure []
-    Right nodes -> pure nodes
 
 -------------------------------------------------------------------------------
 -- handle full API
 -------------------------------------------------------------------------------
 
 type Api
-  =    ServerApi
-  :<|> ClientRoutesServer
+  =    ClientRoutesServer
+  :<|> ServerApi
   :<|> Raw
 
 handle404 :: Application
@@ -94,7 +80,7 @@ instance ToHtml Page where
             , href_ (mkStaticUri "favicon.ico")
             , type_ "image/x-icon"
             ]
-          , script_ [ src_ (mkStaticUri "index.js"), type_ "module" ] ""
+          , script_ [ src_ (mkAppUri "index.js"), type_ "module" ] ""
           , body_ [] [toView @Model x]
           ]
         ]
@@ -108,24 +94,21 @@ serverApp :: Application
 serverApp = serve (Proxy @Api) handlers
   where
     handlers 
-      =    handleServerApi
-      :<|> handleClientRoutes
+      =    handleClientRoutes
+      :<|> handleServerApi
       :<|> Tagged handle404
 
-data ServerArgs = ServerArgs
+newtype ServerArgs = ServerArgs
   { _port :: Int
-  , _bookPath :: FilePath
   }
 
 serverArgsP :: Parser ServerArgs
 serverArgsP = ServerArgs
   <$> option auto (long "port" <> value 3000 <> metavar "PORT")
-  <*> argument str (metavar "BOOK_PATH")
 
 runServer :: ServerArgs -> IO ()
 runServer ServerArgs{..} = do
   putStrLn $ "PORT: " <> show _port 
-  putStrLn $ "BOOK_PATH: " <> _bookPath
   putStrLn "Running..."
   run _port $ logStdout $ compress serverApp
   where
@@ -135,21 +118,18 @@ runServer ServerArgs{..} = do
 -- rendering app
 -------------------------------------------------------------------------------
 
-data RenderingArgs = RenderingArgs
-  { _inputPath :: FilePath
-  , _outputPath :: FilePath
+newtype RenderingArgs = RenderingArgs
+  { _outputPath :: FilePath
   }
 
 renderingArgsP :: Parser RenderingArgs
 renderingArgsP = RenderingArgs
-  <$> argument str (metavar "INPUT_PATH")
-  <*> argument str (metavar "OUTPUT_PATH")
+  <$> option str (long "output" <> value "output" <> metavar "OUTPUT_PATH")
 
 runRendering :: RenderingArgs -> IO ()
 runRendering RenderingArgs{..} = do
-  putStrLn $ "INPUT_PATH: " <> _inputPath
   putStrLn $ "OUTPUT_PATH: " <> _outputPath
-  pure ()
+  -- TODO
 
 -------------------------------------------------------------------------------
 -- main
@@ -174,7 +154,5 @@ opts = info (commandP <**> helper)
   <> header "Misodoc2" )
 
 main :: IO ()
-main = do
-  print $ mkStaticUri "foobar"
-  join $ execParser opts
+main = join $ execParser opts
 
