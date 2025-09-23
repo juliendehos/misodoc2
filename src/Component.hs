@@ -76,6 +76,10 @@ data Action
   | ActionRenderCode DOMRef
   | ActionRenderMath MathType DOMRef
   | ActionScrollToTop
+  -- TODO | ActionAskPage MisoString
+  | ActionSetPage MisoString (Response [Node])
+  -- TODO | ActionAskSummary MisoString
+  | ActionSetSummary MisoString (Response MisoString)
 
 -------------------------------------------------------------------------------
 -- Update
@@ -102,6 +106,40 @@ updateModel (ActionRenderMath mathtype domref) =
 
 updateModel ActionScrollToTop =
   io_ scrollToTop
+
+{-
+updateModel (ActionAskPage fp) =
+  getText fp [headerNoCache] (ActionSetPage fp) (ActionFetchError fp)
+-}
+
+updateModel (ActionSetPage fp rep) = do
+  modelCurrent .= fp
+  modelPage .= body rep
+  io_ scrollToTop
+
+{-
+updateModel (ActionAskSummary fp) =
+  getText fp [headerNoCache] (ActionSetSummary fp) (ActionFetchError fp)
+
+updateModel (ActionSetSummary fp rep) = do
+  case parseNodes fp (body rep) of
+    Left err -> modelError ?= ParseError err
+    Right ns -> do
+      modelSummary .= ns
+      modelError .= Nothing
+      case getChapters ns of
+        [] -> pure ()
+        chapters@(c:_) -> do
+          modelChapters .= chapters
+          issue $ ActionAskPage c
+-}
+
+updateModel (ActionSetSummary fp rep) = do
+  let nodes = body rep
+  modelSummary .= nodes
+  modelChapters .= getChapters nodes
+
+  -- TODO load first page?
 
 -------------------------------------------------------------------------------
 -- View
