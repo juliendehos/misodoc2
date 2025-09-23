@@ -40,15 +40,18 @@ executable app
   else
 
     main-is:
-      server.hs
+      Main.hs
     other-modules:
       Component
       FFI
       Markdown
       Model
+      Render
+      Serve
     build-depends: 
       aeson,
       base,
+      bytestring,
       commonmark,
       commonmark-simple,
       http-types,

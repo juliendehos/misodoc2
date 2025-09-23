@@ -300,6 +300,13 @@ type AppComponent = App Model Action
 
 appComponent :: URI -> AppComponent
 appComponent uri =
+  (mkComponent $ emptyModel uri)
+    { initialAction = Just (ActionAskSummary (mkBookUri "summary.md"))
+    , logLevel = DebugAll
+    }
+
+mkComponent :: Model -> AppComponent
+mkComponent initialModel =
   (component initialModel updateModel viewModel)
     { subs = [ uriSub ActionSetUri ]
     , styles = 
@@ -315,13 +322,9 @@ appComponent uri =
         -- , Src "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"
         , Src (mkStaticUri "highlight.min.js")
         ]
-    , initialAction = Just (ActionAskSummary (mkBookUri "summary.md"))
-    , logLevel = DebugAll
     }
 
   where
-    initialModel = emptyModel uri 
-
     viewModel m =
         case route (Proxy @ClientRoutes) clientHandlers _modelUri m of
           Left _ -> view404 m

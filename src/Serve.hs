@@ -4,11 +4,14 @@
 
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-import Control.Monad (join)
+module Serve 
+  ( runServer
+  , ServerArgs(..)
+  ) where
+
 import Miso hiding (run)
 import Miso.Html.Render
 import Miso.Html.Element as H
--- import Miso.Html.Event as E
 import Miso.Html.Property as P
 import Network.HTTP.Types
 import Network.Wai (responseLBS)
@@ -16,7 +19,6 @@ import Network.Wai.Application.Static (defaultWebAppSettings)
 import Network.Wai.Handler.Warp (run)
 import Network.Wai.Middleware.Gzip (GzipFiles (..), def, gzip, gzipFiles)
 import Network.Wai.Middleware.RequestLogger (logStdout)
-import Options.Applicative
 import Servant
 import Servant.Miso.Html
 
@@ -62,7 +64,7 @@ handle404 _ respond' =
         Page (appComponent uri404)
 
 -------------------------------------------------------------------------------
--- server rendering
+-- Page
 -------------------------------------------------------------------------------
 
 instance ToHtml Page where
@@ -98,13 +100,17 @@ serverApp = serve (Proxy @Api) handlers
       :<|> handleServerApi
       :<|> Tagged handle404
 
+-------------------------------------------------------------------------------
+-- args
+-------------------------------------------------------------------------------
+
 newtype ServerArgs = ServerArgs
   { _port :: Int
   }
 
-serverArgsP :: Parser ServerArgs
-serverArgsP = ServerArgs
-  <$> option auto (long "port" <> value 3000 <> metavar "PORT")
+-------------------------------------------------------------------------------
+-- runServer
+-------------------------------------------------------------------------------
 
 runServer :: ServerArgs -> IO ()
 runServer ServerArgs{..} = do
@@ -113,46 +119,4 @@ runServer ServerArgs{..} = do
   run _port $ logStdout $ compress serverApp
   where
     compress = gzip def{gzipFiles = GzipCompress}
-
--------------------------------------------------------------------------------
--- rendering app
--------------------------------------------------------------------------------
-
-newtype RenderingArgs = RenderingArgs
-  { _outputPath :: FilePath
-  }
-
-renderingArgsP :: Parser RenderingArgs
-renderingArgsP = RenderingArgs
-  <$> option str (long "output" <> value "output" <> metavar "OUTPUT_PATH")
-
-runRendering :: RenderingArgs -> IO ()
-runRendering RenderingArgs{..} = do
-  putStrLn $ "OUTPUT_PATH: " <> _outputPath
-  -- TODO
-
--------------------------------------------------------------------------------
--- main
--------------------------------------------------------------------------------
-
-commandP :: Parser (IO ())
-commandP = hsubparser
-  (  command "serve" 
-        (info 
-          (runServer <$> serverArgsP) 
-          (progDesc "Run a server that dynamically renders MD files."))
-  <> command "render" 
-        (info 
-          (runRendering <$> renderingArgsP) 
-          (progDesc "Render MD files to static HTML files."))
-  )
-
-opts :: ParserInfo (IO ())
-opts = info (commandP <**> helper)
-  ( fullDesc
-  <> progDesc "Static/dynamic MarkDown renderer."
-  <> header "Misodoc2" )
-
-main :: IO ()
-main = join $ execParser opts
 
