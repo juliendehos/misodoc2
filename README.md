@@ -6,6 +6,7 @@ TODO
 
 - render to static files
 - improve error handling
+- book
 - README
 
 

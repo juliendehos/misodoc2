@@ -108,11 +108,13 @@ updateModel (ActionAskPage fp) = do
   getText fp [headerNoCache] (ActionSetPage fp) (ActionFetchError fp)
 
 updateModel (ActionSetPage fp rep) = do
-  modelCurrent .= fp
   io_ scrollToTop
   case parseNodes fp (body rep) of
-    Left err -> modelError ?= ParseError fp err
+    Left err -> do
+      modelCurrent .= " "
+      modelError ?= ParseError fp err
     Right ns -> do
+      modelCurrent .= fp
       modelPage .= ns
       modelError .= Nothing
 
@@ -134,7 +136,6 @@ updateModel (ActionSetSummary fp rep) = do
 updateModel (ActionFetchError fp rep) = do
   let msg = ms ("errorMessage: " <> show (errorMessage rep) <> "\nbody: " <> show (body rep))
   modelError ?= FetchError fp msg
-
 
 -------------------------------------------------------------------------------
 -- View
