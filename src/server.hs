@@ -6,6 +6,7 @@
 
 import Control.Monad (join)
 import Control.Monad.IO.Class (liftIO, MonadIO)
+import Data.Text.IO qualified as T
 import Miso hiding (run)
 import Miso.Html.Render
 import Miso.Html.Element as H
@@ -50,8 +51,13 @@ handleServerApi
 
 handleNodes :: MonadIO m => FilePath -> m [Node]
 handleNodes fp = do
-  liftIO $ print fp
-  pure []
+  let path = "book/" <> fp
+  contents <- liftIO $ T.readFile path
+  case parseNodes (ms path) (ms contents) of
+    Left err -> do
+      liftIO $ T.putStrLn $ "Parsing error: " <> fromMisoString err
+      pure []
+    Right nodes -> pure nodes
 
 -------------------------------------------------------------------------------
 -- handle full API
@@ -119,7 +125,7 @@ serverArgsP = ServerArgs
 runServer :: ServerArgs -> IO ()
 runServer ServerArgs{..} = do
   putStrLn $ "PORT: " <> show _port 
-  putStrLn $ "BOOK_PATH: " <> _bookPath 
+  putStrLn $ "BOOK_PATH: " <> _bookPath
   putStrLn "Running..."
   run _port $ logStdout $ compress serverApp
   where
@@ -168,5 +174,7 @@ opts = info (commandP <**> helper)
   <> header "Misodoc2" )
 
 main :: IO ()
-main = join $ execParser opts
+main = do
+  print $ mkStaticUri "foobar"
+  join $ execParser opts
 

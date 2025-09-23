@@ -14,9 +14,9 @@ import Miso.Lens
 import Miso.Html.Element as H 
 import Miso.Html.Event as E
 import Miso.Html.Property as P
-import Miso.Router (prettyURI)
-import Servant.API hiding (URI)
-import Servant.Links hiding (URI)
+import Miso.Router (URI(..))
+import Servant.API hiding (URI(..))
+import Servant.Links hiding (URI(..))
 import Servant.Miso.Router
 import Text.Pandoc.Definition (MathType)
 
@@ -61,9 +61,9 @@ uriStatic :<|> uriNodes :<|> uriFiles =
   allLinks' toMisoURI (Proxy @ServerApi)
 
 mkStaticUri, mkNodesUri, mkFilesUri :: MisoString -> MisoString
-mkStaticUri filename = prettyURI uriStatic <> "/" <> filename
-mkNodesUri filename = prettyURI (uriNodes $ fromMisoString filename) <> "/" <> filename
-mkFilesUri filename = prettyURI uriFiles <> "/" <> filename
+mkStaticUri filename = uriPath uriStatic <> "/" <> filename
+mkNodesUri filename = uriPath (uriNodes $ fromMisoString filename)
+mkFilesUri filename = uriPath uriFiles <> "/" <> filename
 
 -------------------------------------------------------------------------------
 -- Action
@@ -76,10 +76,11 @@ data Action
   | ActionRenderCode DOMRef
   | ActionRenderMath MathType DOMRef
   | ActionScrollToTop
-  -- TODO | ActionAskPage MisoString
+  | ActionAskPage MisoString
   | ActionSetPage MisoString (Response [Node])
-  -- TODO | ActionAskSummary MisoString
-  | ActionSetSummary MisoString (Response MisoString)
+  | ActionAskSummary MisoString
+  | ActionSetSummary MisoString (Response [Node])
+  | ActionFetchError MisoString (Response MisoString)
 
 -------------------------------------------------------------------------------
 -- Update
@@ -89,10 +90,12 @@ updateModel :: Action -> Transition Model Action
 
 updateModel (ActionPushUri u) = do
   io_ (pushURI u)
+  io_ (consoleLog $ ms u)
   modelError ?= ""
 
 updateModel (ActionSetUri u) = do
   modelUri .= u
+  io_ (consoleLog $ ms u)
   modelError ?= ms u
 
 updateModel ActionSwitchSummary =
@@ -107,39 +110,32 @@ updateModel (ActionRenderMath mathtype domref) =
 updateModel ActionScrollToTop =
   io_ scrollToTop
 
-{-
 updateModel (ActionAskPage fp) =
-  getText fp [headerNoCache] (ActionSetPage fp) (ActionFetchError fp)
--}
+  getJSON fp [] (ActionSetPage fp) (ActionFetchError fp)
+  -- getJSON fp [headerNoCache] (ActionSetPage fp) (ActionFetchError fp)
 
 updateModel (ActionSetPage fp rep) = do
   modelCurrent .= fp
   modelPage .= body rep
   io_ scrollToTop
 
-{-
-updateModel (ActionAskSummary fp) =
-  getText fp [headerNoCache] (ActionSetSummary fp) (ActionFetchError fp)
-
-updateModel (ActionSetSummary fp rep) = do
-  case parseNodes fp (body rep) of
-    Left err -> modelError ?= ParseError err
-    Right ns -> do
-      modelSummary .= ns
-      modelError .= Nothing
-      case getChapters ns of
-        [] -> pure ()
-        chapters@(c:_) -> do
-          modelChapters .= chapters
-          issue $ ActionAskPage c
--}
+updateModel (ActionAskSummary fp) = do
+  io_ (consoleLog $ ms fp)
+  getJSON fp [] (ActionSetSummary fp) (ActionFetchError fp)
 
 updateModel (ActionSetSummary fp rep) = do
   let nodes = body rep
   modelSummary .= nodes
-  modelChapters .= getChapters nodes
+  case getChapters nodes of
+    [] -> pure ()
+    chapters@(c:_) -> do
+      modelChapters .= chapters
+      issue $ ActionAskPage c
 
-  -- TODO load first page?
+updateModel (ActionFetchError fp rep) = do
+  let msg = ms ("errorMessage: " <> show (errorMessage rep) <> "\nbody: " <> show (body rep))
+  modelError ?= "fetch error in " <> fp <> ":\n" <> msg
+
 
 -------------------------------------------------------------------------------
 -- View
@@ -185,7 +181,7 @@ viewPage m@Model{..} =
 
     viewTop = 
       div_ []
-        [ mkLink ActionSwitchSummary [ img_ [ src_ "icon-toc.jpg", height_ "20" ] ]
+        [ mkLink ActionSwitchSummary [ img_ [ src_ (mkStaticUri "icon-toc.jpg"), height_ "20" ] ]
         , span_ 
             [ CSS.style_ 
               [ CSS.fontWeight "bold"
@@ -214,11 +210,11 @@ viewError Model{..} =
 viewNav :: Model -> View Model Action
 viewNav Model{..} = 
   p_ [] 
-    [ fmtImg "icon-left.jpg" "icon-left-ko.jpg" mPrev
+    [ fmtImg (mkStaticUri "icon-left.jpg") (mkStaticUri "icon-left-ko.jpg") mPrev
     , " "
-    , img_ [ src_ "icon-top.jpg", height_ "20", onClick ActionScrollToTop ]
+    , img_ [ src_ (mkStaticUri "icon-top.jpg"), height_ "20", onClick ActionScrollToTop ]
     , " "
-    , fmtImg "icon-right.jpg" "icon-right-ko.jpg" mNext
+    , fmtImg (mkStaticUri "icon-right.jpg") (mkStaticUri "icon-right-ko.jpg") mNext
     ]
   where
 
@@ -226,14 +222,13 @@ viewNav Model{..} =
 
     fmtImg imgOk imgKo = \case
       Nothing -> img_ [ src_ imgKo, height_ "20" ]
-      (Just x) -> img_ [ src_ imgOk, height_ "20" ]
-      -- TODO (Just x) -> img_ [ src_ imgOk, height_ "20", onClick (ActionAskPage x) ]
+      Just x -> img_ [ src_ imgOk, height_ "20", onClick (ActionAskPage x) ]
 
 
 formatter :: Formatter Model Action
 formatter = Formatter
-  -- TODO { _fmtChapterLink = mkLink . ActionAskPage . ms
-  { _fmtCodeBlock = \langClass ns ->
+  { _fmtChapterLink = mkLink . ActionAskPage . ms
+  , _fmtCodeBlock = \langClass ns ->
       pre_ 
         [ class_ langClass
         , onCreatedWith_ ActionRenderCode 
@@ -256,7 +251,7 @@ mkLink action =
     [ onClick action
     , CSS.style_ 
       [ CSS.textDecoration "underline blue"
-      , CSS.color CSS.blue
+      , CSS.color #0000FF
       , CSS.cursor "pointer" 
       ]
     ]
@@ -310,7 +305,7 @@ appComponent uri =
     , styles = 
       [ Href "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css"
       -- , Href "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css"
-      , Href "github.min.css"
+      , Href (mkStaticUri "github.min.css")
       , blockquoteStyle
       , codeStyle
       , tableStyle
@@ -318,8 +313,9 @@ appComponent uri =
     , scripts = 
         [ Src "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"
         -- , Src "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"
-        , Src "highlight.min.js"
+        , Src (mkStaticUri "highlight.min.js")
         ]
+    , initialAction = Just (ActionAskSummary (mkNodesUri "summary.md"))
     , logLevel = DebugAll
     }
 
