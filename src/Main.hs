@@ -11,7 +11,7 @@ serverArgsP = ServerArgs
 
 renderingArgsP :: Parser RenderingArgs
 renderingArgsP = RenderingArgs
-  <$> (optText "output" 'o' "Output directory" <|> pure "output")
+  <$> (optPath "output" 'o' "Output directory" <|> pure "output")
 
 data Command
   = CommandServe ServerArgs

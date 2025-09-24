@@ -52,7 +52,7 @@ instance ToHtml Page where
 -------------------------------------------------------------------------------
 
 newtype RenderingArgs = RenderingArgs
-  { _outputPath :: Text
+  { _outputPath :: FilePath
   }
 
 -------------------------------------------------------------------------------
@@ -61,12 +61,16 @@ newtype RenderingArgs = RenderingArgs
 
 runRendering :: RenderingArgs -> IO ()
 runRendering RenderingArgs{..} = do
-  T.putStrLn $ "OUTPUT: " <> _outputPath
+  putStrLn $ "OUTPUT: " <> _outputPath
+  outputExists <- testdir _outputPath
+  when outputExists $ rmtree _outputPath
+  cptreeL "book" _outputPath
+
   -- TODO
-  summaryStr <- ms <$> T.readFile "book/summary.md"
+  summaryStr <- ms <$> T.readFile (_outputPath <> "/summary.md")
   case parseNodes "summary.md" summaryStr of
     Left err -> T.putStrLn $ fromMisoString err
     Right nodes -> do
       let m = (emptyModel uriHome) { _modelSummary = nodes }
-      B.writeFile "out/index.html" $ toHtml (Page $ mkComponent m)
+      B.writeFile (_outputPath <> "/index.html") $ toHtml (Page $ mkComponent m)
 
