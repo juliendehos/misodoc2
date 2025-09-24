@@ -1,12 +1,14 @@
 # misodoc2
 
-Work in progress
-
 TODO
 
-- render to static files
 - book
 - README
+- render: 
+    - internal links (chapters, previous, next, top)
+    - code highlighting
+    - math rendering
+    - show/hide summary
 
 
 ## Build and run server:

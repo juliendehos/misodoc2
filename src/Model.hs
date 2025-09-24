@@ -39,9 +39,6 @@ data Model = Model
 makeLenses ''Model
 
 -- warning: an empty would cause hydration to fail
-mkModel :: [MisoString] -> [Node] -> [Node] -> URI -> Model
-mkModel = Model Nothing " " True
-
 emptyModel :: URI -> Model
-emptyModel = mkModel [] [] []
+emptyModel = Model Nothing " " True [] [] []
 

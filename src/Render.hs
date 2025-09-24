@@ -9,6 +9,7 @@ module Render
   , RenderingArgs(..)
   ) where
 
+import Control.Monad (forM_)
 import Data.ByteString.Lazy qualified as B
 import Data.Text.IO qualified as T
 import Miso hiding (run)
@@ -28,7 +29,7 @@ import Model
 newtype Page = Page AppComponent
 
 instance ToHtml Page where
-  toHtml (Page x) =
+  toHtml (Page page) =
     toHtml
       [ doctype_
       , html_
@@ -42,7 +43,7 @@ instance ToHtml Page where
             , href_ (mkStaticUri "favicon.ico")
             , type_ "image/x-icon"
             ]
-          , body_ [] [toView @Model x]
+          , body_ [] [toView @Model page]
           ]
         ]
       ]
@@ -62,15 +63,52 @@ newtype RenderingArgs = RenderingArgs
 runRendering :: RenderingArgs -> IO ()
 runRendering RenderingArgs{..} = do
   putStrLn $ "OUTPUT: " <> _outputPath
+
+  -- copy "book" to output path
   outputExists <- testdir _outputPath
   when outputExists $ rmtree _outputPath
   cptreeL "book" _outputPath
 
-  -- TODO
-  summaryStr <- ms <$> T.readFile (_outputPath <> "/summary.md")
-  case parseNodes "summary.md" summaryStr of
-    Left err -> T.putStrLn $ fromMisoString err
-    Right nodes -> do
-      let m = (emptyModel uriHome) { _modelSummary = nodes }
-      B.writeFile (_outputPath <> "/index.html") $ toHtml (Page $ mkComponent m)
+  let summaryMd = _outputPath </> "summary.md"
+  rSummary <- doSummary summaryMd
+  case rSummary of
+    Left summaryErr -> do
+      putStrLn summaryErr
+      exit (ExitFailure (-1))
+    Right summaryNodes -> do
+      let chapters = getChapters summaryNodes
+      forM_ chapters $ \chapter -> do
+        doPage chapter chapters summaryNodes
+      case chapters of
+        (c:_) -> 
+          let cHtml = dropExtension (fromMisoString c) <.> "html"
+          in symlink cHtml (_outputPath </> "index.html")
+        _ -> pure ()
+
+  where
+    doSummary md = do
+      fileExists <- testfile md
+      if not fileExists
+        then pure $ Left $ "Error: " <> md <> " does not exist"
+        else do
+          putStrLn $ "loading: " <> md
+          str <- ms <$> T.readFile md
+          case parseNodes (ms md) str of
+            Left parseErr -> pure $ Left $ "Parse error (" <> md <> "): " <> fromMisoString parseErr
+            Right nodes -> pure $ Right nodes
+
+    doPage chapter chapters summaryNodes = do
+      let chapterPath = _outputPath </> fromMisoString chapter
+          chapterHtml = dropExtension chapterPath <.> "html"
+      fileExists <- testfile chapterPath
+      if not fileExists
+        then putStrLn $ "Error: " <> chapterPath <> " does not exist"
+        else do
+          putStrLn $ "rendering: " <> chapterPath <> " -> " <> chapterHtml
+          pageStr <- ms <$> T.readFile chapterPath
+          case parseNodes chapter pageStr of
+            Left parseErr -> putStrLn $ "Parse error (" <> chapterPath <> "): " <> fromMisoString parseErr
+            Right pageNodes -> do
+              let m = Model Nothing chapter True chapters summaryNodes pageNodes uriHome
+              B.writeFile chapterHtml $ toHtml (Page $ mkComponent m)
 
