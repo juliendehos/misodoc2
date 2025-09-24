@@ -1,39 +1,36 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-{-# OPTIONS_GHC -fno-warn-orphans #-}
-
-import Control.Monad (join)
-import Options.Applicative
+import Turtle
 
 import Render
 import Serve 
 
 serverArgsP :: Parser ServerArgs
 serverArgsP = ServerArgs
-  <$> option auto (long "port" <> value 3000 <> metavar "PORT")
+  <$> (optInt "port" 'p' "Port" <|> pure 3000)
 
 renderingArgsP :: Parser RenderingArgs
 renderingArgsP = RenderingArgs
-  <$> option str (long "output" <> value "output" <> metavar "OUTPUT_PATH")
+  <$> (optText "output" 'o' "Output directory" <|> pure "output")
 
-commandP :: Parser (IO ())
-commandP = hsubparser
-  (  command "serve" 
-        (info 
-          (runServer <$> serverArgsP) 
-          (progDesc "Run a server that dynamically renders MD files."))
-  <> command "render" 
-        (info 
-          (runRendering <$> renderingArgsP) 
-          (progDesc "Render MD files to static HTML files."))
-  )
+data Command
+  = CommandServe ServerArgs
+  | CommandRender RenderingArgs
 
-opts :: ParserInfo (IO ())
-opts = info (commandP <**> helper)
-  ( fullDesc
-  <> progDesc "Static/dynamic MarkDown renderer."
-  <> header "Misodoc2" )
+commandDesc, serveDesc, renderDesc :: Description
+commandDesc = "Misodoc2 - Static/dynamic MarkDown renderer."
+serveDesc = "Run a server that dynamically renders MD files."
+renderDesc = "Render MD files to static HTML files."
+
+commandP :: Parser Command
+commandP
+  =   subcommand "serve" serveDesc (CommandServe <$> serverArgsP)
+  <|> subcommand "render" renderDesc (CommandRender <$> renderingArgsP)
 
 main :: IO ()
-main = join $ execParser opts
+main = do
+  command <- options commandDesc commandP
+  case command of
+    CommandServe args -> runServer args
+    CommandRender args -> runRendering args
 

@@ -290,7 +290,7 @@ tableStyle = Sheet $ CSS.sheet_
   ]
 
 docTitle :: MisoString
-docTitle = "MisoDoc"
+docTitle = "MisoDoc2"
 
 -------------------------------------------------------------------------------
 -- Component
