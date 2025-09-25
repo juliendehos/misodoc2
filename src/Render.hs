@@ -49,8 +49,8 @@ instance ToHtml Page where
 
           , script_ [ src_ (mkStaticUri "run_katex.js") ] ""
           , script_ [ src_ (mkStaticUri "run_hljs.js") ] ""
-          , body_ [] [toView @Model p]
           ]
+        , body_ [] [toView @Model p]
         ]
       ]
 
@@ -116,5 +116,15 @@ runRendering RenderingArgs{..} = do
             Left parseErr -> putStrLn $ "Parse error (" <> chapterPath <> "): " <> fromMisoString parseErr
             Right pageNodes -> do
               let m = Model Nothing chapter True chapters summaryNodes pageNodes uriHome
-              B.writeFile chapterHtml $ toHtml (Page $ mkComponent m)
+              B.writeFile chapterHtml $ toHtml (Page $ mkComponent renderFormatter m)
+
+    renderFormatter = defFormatter
+      { _fmtChapterLink = \url inner -> a_ [href_ (ms $ mdToHtml $ fromMisoString url)] inner
+      , _fmtScrollToTopAttr = id
+      , _fmtScrollToTopElt = \elt -> a_ [ href_ "#" ] [ elt ]
+      , _fmtNavPageAttr = \_ attrs -> attrs
+      , _fmtNavPageElt = \url elt -> a_ [ href_ (ms $ mdToHtml $ fromMisoString url) ] [ elt ]
+      }
+
+    mdToHtml md = dropExtension md <.> "html"
 

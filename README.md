@@ -3,7 +3,6 @@
 TODO
 
 - render: 
-    - internal links (chapters, previous, next, top)
     - show/hide summary
 - book
 - README

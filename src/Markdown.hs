@@ -13,7 +13,7 @@ module Markdown
   ) where
 
 import Commonmark.Simple
-import Miso (MisoString, View, fromMisoString, ms, text)
+import Miso (MisoString, View, fromMisoString, ms, text, Attribute)
 import Miso.Html.Element as H
 import Miso.Html.Property as P
 import Text.Pandoc.Definition
@@ -37,6 +37,10 @@ data Formatter m a = Formatter
   { _fmtChapterLink :: MisoString -> [View m a] -> View m a
   , _fmtCodeBlock :: MisoString -> [View m a] -> View m a
   , _fmtMath :: MathType -> [View m a] -> View m a
+  , _fmtScrollToTopAttr :: [Attribute a] -> [Attribute a]
+  , _fmtScrollToTopElt :: View m a -> View m a
+  , _fmtNavPageAttr :: MisoString -> [Attribute a] -> [Attribute a]
+  , _fmtNavPageElt :: MisoString -> View m a -> View m a
   }
 
 parseNodes :: MisoString -> MisoString -> Either MisoString [Block]

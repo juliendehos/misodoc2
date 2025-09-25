@@ -147,35 +147,34 @@ view404 _ =
     []
     [ "page not found" ]
 
-viewHome :: Model -> View Model Action
-viewHome m@Model{..} =
+viewHome :: Formatter Model Action -> Model -> View Model Action
+viewHome fmt m@Model{..} =
   div_ [ CSS.style_ [ CSS.display "flex", CSS.flexDirection "row" ] ]
-    [ if _modelShowSummary then viewSummary m else span_ [] []
-    , if isNothing _modelError then viewPage m else viewError m
+    [ if _modelShowSummary then viewSummary fmt m else span_ [] []
+    , if isNothing _modelError then viewPage fmt m else viewError m
     ]
 
-viewSummary :: Model -> View Model Action
-viewSummary Model{..} = 
+viewSummary :: Formatter Model Action -> Model -> View Model Action
+viewSummary fmt Model{..} = 
   div_ 
     [ CSS.style_ 
         [ CSS.paddingRight "10px"
         , CSS.minWidth "220px"
         , CSS.maxWidth "220px" ]
         ]
-    [ renderNodes formatter _modelChapters _modelSummary ]
+    [ renderNodes fmt _modelChapters _modelSummary ]
 
-
-viewPage :: Model -> View Model Action
-viewPage m@Model{..} = 
+viewPage :: Formatter Model Action -> Model -> View Model Action
+viewPage fmt m@Model{..} = 
   div_ 
     [ CSS.style_ 
         [ CSS.maxWidth "800px"
         ]
     ]
     [ viewTop
-    , renderNodes formatter _modelChapters _modelPage
+    , renderNodes fmt _modelChapters _modelPage
     , hr_ []
-    , viewNav m
+    , viewNav fmt m
     ]
   where
 
@@ -207,12 +206,12 @@ viewError Model{..} =
           [ text (maybe "" ms _modelError) ]
       ]
 
-viewNav :: Model -> View Model Action
-viewNav Model{..} = 
+viewNav :: Formatter Model Action -> Model -> View Model Action
+viewNav Formatter{..} Model{..} = 
   p_ [] 
     [ fmtImg (mkStaticUri "icon-left.jpg") (mkStaticUri "icon-left-ko.jpg") mPrev
     , " "
-    , img_ [ src_ (mkStaticUri "icon-top.jpg"), height_ "20", onClick ActionScrollToTop ]
+    , _fmtScrollToTopElt ( img_ (_fmtScrollToTopAttr [ src_ (mkStaticUri "icon-top.jpg"), height_ "20" ] ) )
     , " "
     , fmtImg (mkStaticUri "icon-right.jpg") (mkStaticUri "icon-right-ko.jpg") mNext
     ]
@@ -222,11 +221,10 @@ viewNav Model{..} =
 
     fmtImg imgOk imgKo = \case
       Nothing -> img_ [ src_ imgKo, height_ "20" ]
-      Just x -> img_ [ src_ imgOk, height_ "20", onClick (ActionAskPage x) ]
+      Just x -> _fmtNavPageElt x ( img_ ( _fmtNavPageAttr x [ src_ imgOk, height_ "20" ] ) )
 
-
-formatter :: Formatter Model Action
-formatter = Formatter
+defFormatter :: Formatter Model Action
+defFormatter = Formatter
   { _fmtChapterLink = mkLink . ActionAskPage . ms
   , _fmtCodeBlock = \langClass ns ->
       pre_ 
@@ -245,6 +243,10 @@ formatter = Formatter
         , onCreatedWith_ (ActionRenderMath mt)
         ]
         ns
+  , _fmtScrollToTopAttr = (onClick ActionScrollToTop :)
+  , _fmtScrollToTopElt = id
+  , _fmtNavPageAttr = \url attrs -> onClick (ActionAskPage url) : attrs
+  , _fmtNavPageElt = \_ elt -> elt
   }
 
 mkLink :: action -> [View model action] -> View model action
@@ -310,13 +312,13 @@ type AppComponent = App Model Action
 
 appComponent :: URI -> AppComponent
 appComponent uri =
-  (mkComponent $ emptyModel uri)
+  (mkComponent defFormatter (emptyModel uri))
     { initialAction = Just (ActionAskSummary (mkBookUri "summary.md"))
     , logLevel = DebugAll
     }
 
-mkComponent :: Model -> AppComponent
-mkComponent initialModel =
+mkComponent :: Formatter Model Action -> Model -> AppComponent
+mkComponent fmt initialModel =
   (component initialModel updateModel viewModel)
     { subs = [ uriSub ActionSetUri ]
     , styles = 
@@ -339,6 +341,6 @@ mkComponent initialModel =
           Right v -> v
 
     clientHandlers 
-      =    viewHome
+      =    viewHome fmt
       :<|> view404
 

@@ -79,8 +79,8 @@ instance ToHtml Page where
           , meta_ [ name_ "viewport", content_ "width=device-width, initial-scale=1" ]
           , link_ [ rel_ "icon" , href_ (mkStaticUri "favicon.ico") , type_ "image/x-icon" ]
           , script_ [ src_ (mkAppUri "index.js"), type_ "module" ] ""
-          , body_ [] [toView @Model p]
           ]
+        , body_ [] [toView @Model p]
         ]
       ]
 
