@@ -1,6 +1,6 @@
 
 
-/* tableStyle (from Component) */
+/* tableStyle */
 
 th, td {
   padding-left: 10px;
@@ -12,7 +12,7 @@ table, th, td {
   border-collapse: collapse;
 }
 
-/* blockquoteStyle (from Component) */
+/* blockquoteStyle */
 
 blockquote {
   border: 1px solid black;
@@ -20,10 +20,10 @@ blockquote {
   background-color: lightyellow;
 }
 
-/* codeStyle (from Component) */
+/* codeStyle */
 
 pre {
-  border; 1px solid black;
+  border: 1px solid black;
   padding: 10px;
   background-color: #EEEEEE;
 }

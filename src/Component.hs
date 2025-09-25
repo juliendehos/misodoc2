@@ -230,11 +230,6 @@ defFormatter = Formatter
       pre_ 
         [ class_ langClass
         , onCreatedWith_ ActionRenderCode 
-        , CSS.style_
-            [ CSS.border "1px solid black"
-            , CSS.padding "10px"
-            , CSS.backgroundColor #EEEEEE
-            ]
         ]
         [ code_ [] ns ]
   , _fmtMath = \mt ns ->
@@ -260,6 +255,7 @@ mkLink action =
       ]
     ]
 
+{-
 blockquoteStyle :: CSS
 blockquoteStyle = Sheet $ CSS.sheet_
   [ CSS.selector_ "blockquote"
@@ -292,6 +288,7 @@ tableStyle = Sheet $ CSS.sheet_
     , CSS.paddingRight "10px"
     ]
   ]
+-}
 
 docTitle :: MisoString
 docTitle = "MisoDoc2"
@@ -321,6 +318,7 @@ mkComponent :: Formatter Model Action -> Model -> AppComponent
 mkComponent fmt initialModel =
   (component initialModel updateModel viewModel)
     { subs = [ uriSub ActionSetUri ]
+    {-
     , styles = 
       [ Href katexCSS
       , Href highlightjsCSS
@@ -332,6 +330,7 @@ mkComponent fmt initialModel =
         [ Src katexJS
         , Src highlightjsJS
         ]
+    -}
     }
 
   where

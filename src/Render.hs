@@ -40,7 +40,6 @@ instance ToHtml Page where
           , meta_ [ name_ "viewport", content_ "width=device-width, initial-scale=1" ]
           , link_ [ rel_ "icon" , href_ (mkStaticUri "favicon.ico") , type_ "image/x-icon" ]
 
-          -- TODO should be loaded by Component?
           , link_ [ rel_ "stylesheet", href_ katexCSS ]
           , link_ [ rel_ "stylesheet", href_ highlightjsCSS ]
           , link_ [ rel_ "stylesheet", href_ (mkStaticUri "styles.css") ]
