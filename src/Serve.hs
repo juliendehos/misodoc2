@@ -68,7 +68,7 @@ handle404 _ respond' =
 -------------------------------------------------------------------------------
 
 instance ToHtml Page where
-  toHtml (Page x) =
+  toHtml (Page p) =
     toHtml
       [ doctype_
       , html_
@@ -77,13 +77,9 @@ instance ToHtml Page where
           [ P.title_ "Misodoc2" ]
           [ meta_ [ charset_ "utf-8" ]
           , meta_ [ name_ "viewport", content_ "width=device-width, initial-scale=1" ]
-          , link_
-            [ rel_ "icon"
-            , href_ (mkStaticUri "favicon.ico")
-            , type_ "image/x-icon"
-            ]
+          , link_ [ rel_ "icon" , href_ (mkStaticUri "favicon.ico") , type_ "image/x-icon" ]
           , script_ [ src_ (mkAppUri "index.js"), type_ "module" ] ""
-          , body_ [] [toView @Model x]
+          , body_ [] [toView @Model p]
           ]
         ]
       ]

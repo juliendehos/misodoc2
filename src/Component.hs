@@ -17,7 +17,7 @@ import Miso.Html.Property as P
 import Servant.API hiding (URI(..))
 import Servant.Links hiding (URI(..))
 import Servant.Miso.Router
-import Text.Pandoc.Definition (MathType)
+import Text.Pandoc.Definition (MathType(..))
 
 import FFI
 import Markdown
@@ -241,7 +241,9 @@ formatter = Formatter
         [ code_ [] ns ]
   , _fmtMath = \mt ns ->
       span_ 
-        [ onCreatedWith_ (ActionRenderMath mt) ]
+        [ class_ (if mt == DisplayMath then "mymathDisplay" else "mymathInline")
+        , onCreatedWith_ (ActionRenderMath mt)
+        ]
         ns
   }
 
@@ -292,6 +294,14 @@ tableStyle = Sheet $ CSS.sheet_
 docTitle :: MisoString
 docTitle = "MisoDoc2"
 
+katexCSS, katexJS, highlightjsCSS, highlightjsJS :: MisoString
+katexCSS = "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css"
+katexJS = "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"
+-- highlightjsCSS = "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css"
+-- highlightjsJS = "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"
+highlightjsCSS = mkStaticUri "github.min.css"
+highlightjsJS = mkStaticUri "highlight.min.js"
+
 -------------------------------------------------------------------------------
 -- Component
 -------------------------------------------------------------------------------
@@ -310,17 +320,15 @@ mkComponent initialModel =
   (component initialModel updateModel viewModel)
     { subs = [ uriSub ActionSetUri ]
     , styles = 
-      [ Href "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css"
-      -- , Href "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/default.min.css"
-      , Href (mkStaticUri "github.min.css")
+      [ Href katexCSS
+      , Href highlightjsCSS
       , blockquoteStyle
       , codeStyle
       , tableStyle
       ]
     , scripts = 
-        [ Src "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"
-        -- , Src "https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"
-        , Src (mkStaticUri "highlight.min.js")
+        [ Src katexJS
+        , Src highlightjsJS
         ]
     }
 

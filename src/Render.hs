@@ -29,7 +29,7 @@ import Model
 newtype Page = Page AppComponent
 
 instance ToHtml Page where
-  toHtml (Page page) =
+  toHtml (Page p) =
     toHtml
       [ doctype_
       , html_
@@ -38,12 +38,18 @@ instance ToHtml Page where
           [ P.title_ "Misodoc2" ]
           [ meta_ [ charset_ "utf-8" ]
           , meta_ [ name_ "viewport", content_ "width=device-width, initial-scale=1" ]
-          , link_
-            [ rel_ "icon"
-            , href_ (mkStaticUri "favicon.ico")
-            , type_ "image/x-icon"
-            ]
-          , body_ [] [toView @Model page]
+          , link_ [ rel_ "icon" , href_ (mkStaticUri "favicon.ico") , type_ "image/x-icon" ]
+
+          -- TODO should be loaded by Component?
+          , link_ [ rel_ "stylesheet", href_ katexCSS ]
+          , link_ [ rel_ "stylesheet", href_ highlightjsCSS ]
+          , link_ [ rel_ "stylesheet", href_ (mkStaticUri "styles.css") ]
+          , script_ [ src_ katexJS ] ""
+          , script_ [ src_ highlightjsJS ] ""
+
+          , script_ [ src_ (mkStaticUri "run_katex.js") ] ""
+          , script_ [ src_ (mkStaticUri "run_hljs.js") ] ""
+          , body_ [] [toView @Model p]
           ]
         ]
       ]

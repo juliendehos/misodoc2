@@ -1,0 +1,40 @@
+
+
+/* tableStyle (from Component) */
+
+th, td {
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+
+/* blockquoteStyle (from Component) */
+
+blockquote {
+  border: 1px solid black;
+  padding: 10px;
+  background-color: lightyellow;
+}
+
+/* codeStyle (from Component) */
+
+pre {
+  border; 1px solid black;
+  padding: 10px;
+  background-color: #EEEEEE;
+}
+
+code.inlinecode {
+  background-color: #EEEEEE;
+}
+
+/* hljs */
+
+.hljs {
+  background-color: #EEEEEE;
+}
+

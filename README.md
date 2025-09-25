@@ -2,14 +2,15 @@
 
 TODO
 
-- book
-- README
 - render: 
     - internal links (chapters, previous, next, top)
-    - code highlighting
-    - math rendering
     - show/hide summary
+- book
+- README
 
+BUGS?
+
+- Component's styles/scripts are ignored in Render
 
 ## Build and run server:
 

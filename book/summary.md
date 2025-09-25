@@ -9,5 +9,3 @@
 
     2. [Extensions](extensions.md)
 
-    3. [fail](fail.md)
-
