@@ -8,6 +8,7 @@ import Serve
 serverArgsP :: Parser ServerArgs
 serverArgsP = ServerArgs
   <$> (optInt "port" 'p' "Port" <|> pure 3000)
+  <*> (optPath "server" 's' "Server path" <|> pure "server")
   <*> (optPath "input" 'i' "Book path" <|> pure "book")
 
 renderingArgsP :: Parser RenderingArgs

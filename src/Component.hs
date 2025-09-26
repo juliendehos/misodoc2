@@ -245,7 +245,7 @@ defFormatter = Formatter
   , _fmtCodeBlock = \langClass ns ->
       pre_ 
         [ class_ langClass
-        , onCreatedWith_ ActionRenderCode 
+        , onCreatedWith_ ActionRenderCode
         ]
         [ code_ [] ns ]
   , _fmtMath = \mt ns ->
