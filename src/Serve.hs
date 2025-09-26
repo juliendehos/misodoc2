@@ -42,10 +42,10 @@ handleClientRoutes
 -- handle Server API
 -------------------------------------------------------------------------------
 
-handleServerApi :: Server ServerApi
-handleServerApi 
+handleServerApi :: FilePath -> Server ServerApi
+handleServerApi bookPath
   =    serveDirectoryWith (defaultWebAppSettings "server")
-  :<|> serveDirectoryWith (defaultWebAppSettings "book")
+  :<|> serveDirectoryWith (defaultWebAppSettings bookPath)
 
 -------------------------------------------------------------------------------
 -- handle full API
@@ -94,20 +94,21 @@ instance ToHtml Page where
 -- server app
 -------------------------------------------------------------------------------
 
-serverApp :: Application
-serverApp = serve (Proxy @Api) handlers
+serverApp :: FilePath -> Application
+serverApp bookPath = serve (Proxy @Api) handlers
   where
     handlers 
       =    handleClientRoutes
-      :<|> handleServerApi
+      :<|> handleServerApi bookPath
       :<|> Tagged handle404
 
 -------------------------------------------------------------------------------
 -- args
 -------------------------------------------------------------------------------
 
-newtype ServerArgs = ServerArgs
+data ServerArgs = ServerArgs
   { _port :: Int
+  , _bookPath :: FilePath
   }
 
 -------------------------------------------------------------------------------
@@ -117,8 +118,9 @@ newtype ServerArgs = ServerArgs
 runServer :: ServerArgs -> IO ()
 runServer ServerArgs{..} = do
   putStrLn $ "PORT: " <> show _port 
+  putStrLn $ "BOOK_PATH: " <> show _bookPath 
   putStrLn "Running..."
-  run _port $ logStdout $ compress serverApp
+  run _port $ logStdout $ compress (serverApp _bookPath)
   where
     compress = gzip def{gzipFiles = GzipCompress}
 

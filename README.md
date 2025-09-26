@@ -2,7 +2,7 @@
 
 TODO
 
-- render: book path
+- serve: refresh code/math
 - docker
 - book
 - README
