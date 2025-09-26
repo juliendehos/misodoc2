@@ -6,6 +6,9 @@
 
 module Component where
 
+import Control.Concurrent (threadDelay)
+import Control.Monad (when)
+import Control.Monad.IO.Class (liftIO)
 import Data.Maybe (isNothing, fromMaybe)
 import Data.Proxy
 import Miso
@@ -71,11 +74,12 @@ data Action
   | ActionRenderCode DOMRef
   | ActionRenderMath MathType DOMRef
   | ActionScrollToTop
-  | ActionAskPage MisoString
-  | ActionSetPage MisoString (Response MisoString)
-  | ActionAskSummary MisoString
-  | ActionSetSummary MisoString (Response MisoString)
+  | ActionAskPage Bool MisoString
+  | ActionSetPage Bool MisoString (Response MisoString)
+  | ActionAskSummary Bool
+  | ActionSetSummary Bool (Response MisoString)
   | ActionFetchError MisoString (Response MisoString)
+  | ActionRefresh
 
 -------------------------------------------------------------------------------
 -- Update
@@ -104,11 +108,12 @@ updateModel (ActionRenderMath mathtype domref) = do
 updateModel ActionScrollToTop = do
   io_ scrollToTop
 
-updateModel (ActionAskPage fp) = do
-  getText fp [headerNoCache] (ActionSetPage fp) (ActionFetchError fp)
+updateModel (ActionAskPage toTop fp) = do
+  getText fp [headerNoCache] (ActionSetPage toTop fp) (ActionFetchError fp)
 
-updateModel (ActionSetPage fp rep) = do
-  io_ scrollToTop
+updateModel (ActionSetPage toTop fp rep) = do
+  when toTop $
+    io_ scrollToTop
   case parseNodes fp (body rep) of
     Left err -> do
       modelCurrent .= " "
@@ -118,12 +123,13 @@ updateModel (ActionSetPage fp rep) = do
       modelPage .= ns
       modelError .= Nothing
 
-updateModel (ActionAskSummary fp) = do
-  getText fp [headerNoCache] (ActionSetSummary fp) (ActionFetchError fp)
+updateModel (ActionAskSummary toTop) = do
+  getText summaryUri [headerNoCache] (ActionSetSummary toTop) (ActionFetchError summaryUri)
+  issue ActionRefresh
 
-updateModel (ActionSetSummary fp rep) = do
-  case parseNodes fp (body rep) of
-    Left err -> modelError ?= ParseError fp err
+updateModel (ActionSetSummary toTop rep) = do
+  case parseNodes summaryUri (body rep) of
+    Left err -> modelError ?= ParseError summaryUri err
     Right ns -> do
       modelSummary .= ns
       modelError .= Nothing
@@ -131,11 +137,18 @@ updateModel (ActionSetSummary fp rep) = do
         [] -> pure ()
         chapters@(c:_) -> do
           modelChapters .= chapters
-          issue $ ActionAskPage c
+          current <- use modelCurrent
+          let p = if current `elem` chapters then current else c
+          issue $ ActionAskPage toTop p
 
 updateModel (ActionFetchError fp rep) = do
   let msg = fromMaybe "" (errorMessage rep) <> body rep
   modelError ?= FetchError fp msg
+
+updateModel ActionRefresh = do
+  io $ do
+    liftIO $ threadDelay 1_000_000
+    pure $ ActionAskSummary False
 
 -------------------------------------------------------------------------------
 -- View
@@ -225,7 +238,7 @@ viewNav Formatter{..} Model{..} =
 
 defFormatter :: Formatter Model Action
 defFormatter = Formatter
-  { _fmtChapterLink = mkLink . ActionAskPage . ms
+  { _fmtChapterLink = mkLink . ActionAskPage True . ms
   , _fmtCodeBlock = \langClass ns ->
       pre_ 
         [ class_ langClass
@@ -240,7 +253,7 @@ defFormatter = Formatter
         ns
   , _fmtScrollToTopAttr = (onClick ActionScrollToTop :)
   , _fmtScrollToTopElt = id
-  , _fmtNavPageAttr = \url attrs -> onClick (ActionAskPage url) : attrs
+  , _fmtNavPageAttr = \url attrs -> onClick (ActionAskPage True url) : attrs
   , _fmtNavPageElt = \_ elt -> elt
   }
 
@@ -293,6 +306,10 @@ tableStyle = Sheet $ CSS.sheet_
 docTitle :: MisoString
 docTitle = "MisoDoc2"
 
+summaryMd, summaryUri :: MisoString
+summaryMd = "summary.md"
+summaryUri = mkBookUri summaryMd
+
 katexCSS, katexJS, highlightjsCSS, highlightjsJS :: MisoString
 katexCSS = "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css"
 katexJS = "https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"
@@ -310,7 +327,8 @@ type AppComponent = App Model Action
 appComponent :: URI -> AppComponent
 appComponent uri =
   (mkComponent defFormatter (emptyModel uri))
-    { initialAction = Just (ActionAskSummary (mkBookUri "summary.md"))
+    { initialAction = Just ActionRefresh
+    -- { initialAction = Just (ActionAskSummary (mkBookUri summaryMd))
     , logLevel = DebugAll
     }
 

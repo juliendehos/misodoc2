@@ -1,11 +1,13 @@
-# misodoc2
+# MisoDoc2
 
 TODO
 
 - render: 
     - show/hide summary
+
 - book
 - README
+
 
 BUGS?
 

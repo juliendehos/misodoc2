@@ -74,8 +74,8 @@ runRendering RenderingArgs{..} = do
   when outputExists $ rmtree _outputPath
   cptreeL "book" _outputPath
 
-  let summaryMd = _outputPath </> "summary.md"
-  rSummary <- doSummary summaryMd
+  let summaryFp = _outputPath </> fromMisoString summaryMd
+  rSummary <- doSummary summaryFp
   case rSummary of
     Left summaryErr -> do
       putStrLn summaryErr
