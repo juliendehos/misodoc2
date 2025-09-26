@@ -41,6 +41,7 @@ data Formatter m a = Formatter
   , _fmtScrollToTopElt :: View m a -> View m a
   , _fmtNavPageAttr :: MisoString -> [Attribute a] -> [Attribute a]
   , _fmtNavPageElt :: MisoString -> View m a -> View m a
+  , _fmtSwitchSummary :: MisoString -> [Attribute a] -> [Attribute a]
   }
 
 parseNodes :: MisoString -> MisoString -> Either MisoString [Block]

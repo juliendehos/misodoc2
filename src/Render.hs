@@ -105,7 +105,7 @@ runRendering RenderingArgs{..} = do
     doPage chapter chapters summaryNodes = do
       let chapterPath = _outputPath </> fromMisoString chapter
           chapterHtml = dropExtension chapterPath <.> "html"
-          chapterHtmlNoToc = dropExtension chapterPath <> "_notoc" <.> "html"
+          chapterHtmlNoToc = dropExtension chapterPath <> notoc <.> "html"
       fileExists <- testfile chapterPath
       if not fileExists
         then putStrLn $ "Error: " <> chapterPath <> " does not exist"
@@ -126,13 +126,17 @@ runRendering RenderingArgs{..} = do
       , _fmtScrollToTopElt = \elt -> a_ [ href_ "#" ] [ elt ]
       , _fmtNavPageAttr = \_ attrs -> attrs
       , _fmtNavPageElt = \url elt -> a_ [ href_ (ms $ mdToHtml $ fromMisoString url) ] [ elt ]
+      , _fmtSwitchSummary = \page attrs ->  href_ (ms $ mdToHtmlNoToc $ fromMisoString page) : attrs
       }
 
     renderFormatterNoToc = renderFormatter
       { _fmtChapterLink = \url inner -> a_ [href_ (ms $ mdToHtmlNoToc $ fromMisoString url)] inner
       , _fmtNavPageElt = \url elt -> a_ [ href_ (ms $ mdToHtmlNoToc $ fromMisoString url) ] [ elt ]
+      , _fmtSwitchSummary = \page attrs ->  href_ (ms $ mdToHtml $ fromMisoString page) : attrs
       }
 
     mdToHtml md = dropExtension md <.> "html"
-    mdToHtmlNoToc md = dropExtension md <> "_notoc" <.> "html"
+    mdToHtmlNoToc md = dropExtension md <> notoc <.> "html"
+
+    notoc = "_notoc"
 

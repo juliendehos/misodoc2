@@ -2,7 +2,7 @@
 
 TODO
 
-- render: show/hide summary
+- render: book path
 - docker
 - book
 - README

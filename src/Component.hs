@@ -178,7 +178,7 @@ viewSummary fmt Model{..} =
     [ renderNodes fmt _modelChapters _modelSummary ]
 
 viewPage :: Formatter Model Action -> Model -> View Model Action
-viewPage fmt m@Model{..} = 
+viewPage fmt@Formatter{..} m@Model{..} = 
   div_ 
     [ CSS.style_ 
         [ CSS.maxWidth "800px"
@@ -193,8 +193,9 @@ viewPage fmt m@Model{..} =
 
     viewTop = 
       div_ []
-        -- [ mkLink ActionSwitchSummary [ img_ [ src_ (mkStaticUri "icon-toc.jpg"), height_ "20" ] ]
-        [ a_ [ onClick ActionSwitchSummary ] [ img_ [ src_ (mkStaticUri "icon-toc.jpg"), height_ "20" ] ]
+        [ a_ 
+            (_fmtSwitchSummary _modelCurrent [])
+            [ img_ [ src_ (mkStaticUri "icon-toc.jpg"), height_ "20" ] ]
         , span_ 
             [ CSS.style_ 
               [ CSS.fontWeight "bold"
@@ -257,8 +258,10 @@ defFormatter = Formatter
   , _fmtScrollToTopElt = id
   , _fmtNavPageAttr = \url attrs -> onClick (ActionAskPage True url) : attrs
   , _fmtNavPageElt = \_ elt -> elt
+  , _fmtSwitchSummary = \_ attrs ->  onClick ActionSwitchSummary : attrs
   }
 
+chapterLinkCSS :: [CSS.Style]
 chapterLinkCSS =
   [ CSS.textDecoration "underline blue"
   , CSS.color #0000FF
