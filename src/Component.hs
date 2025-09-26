@@ -268,41 +268,6 @@ mkLink action =
       ]
     ]
 
-{-
-blockquoteStyle :: CSS
-blockquoteStyle = Sheet $ CSS.sheet_
-  [ CSS.selector_ "blockquote"
-    [ CSS.border "1px solid black"
-    , CSS.padding "10px"
-    , CSS.backgroundColor CSS.lightyellow
-    ]
-  ]
-
-codeStyle :: CSS
-codeStyle = Sheet $ CSS.sheet_
-  [ CSS.selector_ "pre"
-    [ CSS.border "1px solid black"
-    , CSS.padding "10px"
-    , CSS.backgroundColor #EEEEEE
-    ]
-  , CSS.selector_ "code.inlinecode"
-    [ CSS.backgroundColor #EEEEEE
-    ]
-  ]
-
-tableStyle :: CSS
-tableStyle = Sheet $ CSS.sheet_
-  [ CSS.selector_ "table, th, td"
-    [ CSS.border "1px solid black"
-    , CSS.borderCollapse "collapse"
-    ]
-  , CSS.selector_ "th, td"
-    [ CSS.paddingLeft "10px"
-    , CSS.paddingRight "10px"
-    ]
-  ]
--}
-
 docTitle :: MisoString
 docTitle = "MisoDoc2"
 
@@ -328,7 +293,6 @@ appComponent :: URI -> AppComponent
 appComponent uri =
   (mkComponent defFormatter (emptyModel uri))
     { initialAction = Just ActionRefresh
-    -- { initialAction = Just (ActionAskSummary (mkBookUri summaryMd))
     , logLevel = DebugAll
     }
 
@@ -336,19 +300,6 @@ mkComponent :: Formatter Model Action -> Model -> AppComponent
 mkComponent fmt initialModel =
   (component initialModel updateModel viewModel)
     { subs = [ uriSub ActionSetUri ]
-    {-
-    , styles = 
-      [ Href katexCSS
-      , Href highlightjsCSS
-      , blockquoteStyle
-      , codeStyle
-      , tableStyle
-      ]
-    , scripts = 
-        [ Src katexJS
-        , Src highlightjsJS
-        ]
-    -}
     }
 
   where
