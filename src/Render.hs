@@ -105,6 +105,7 @@ runRendering RenderingArgs{..} = do
     doPage chapter chapters summaryNodes = do
       let chapterPath = _outputPath </> fromMisoString chapter
           chapterHtml = dropExtension chapterPath <.> "html"
+          chapterHtmlNoToc = dropExtension chapterPath <> "_notoc" <.> "html"
       fileExists <- testfile chapterPath
       if not fileExists
         then putStrLn $ "Error: " <> chapterPath <> " does not exist"
@@ -114,8 +115,10 @@ runRendering RenderingArgs{..} = do
           case parseNodes chapter pageStr of
             Left parseErr -> putStrLn $ "Parse error (" <> chapterPath <> "): " <> fromMisoString parseErr
             Right pageNodes -> do
-              let m = Model Nothing chapter True chapters summaryNodes pageNodes uriHome
-              B.writeFile chapterHtml $ toHtml (Page $ mkComponent renderFormatter m)
+              let model = Model Nothing chapter True chapters summaryNodes pageNodes uriHome
+                  modelNoToc = model { _modelShowSummary = False }
+              B.writeFile chapterHtml $ toHtml (Page $ mkComponent renderFormatter model)
+              B.writeFile chapterHtmlNoToc $ toHtml (Page $ mkComponent renderFormatterNoToc modelNoToc)
 
     renderFormatter = defFormatter
       { _fmtChapterLink = \url inner -> a_ [href_ (ms $ mdToHtml $ fromMisoString url)] inner
@@ -125,5 +128,11 @@ runRendering RenderingArgs{..} = do
       , _fmtNavPageElt = \url elt -> a_ [ href_ (ms $ mdToHtml $ fromMisoString url) ] [ elt ]
       }
 
+    renderFormatterNoToc = renderFormatter
+      { _fmtChapterLink = \url inner -> a_ [href_ (ms $ mdToHtmlNoToc $ fromMisoString url)] inner
+      , _fmtNavPageElt = \url elt -> a_ [ href_ (ms $ mdToHtmlNoToc $ fromMisoString url) ] [ elt ]
+      }
+
     mdToHtml md = dropExtension md <.> "html"
+    mdToHtmlNoToc md = dropExtension md <> "_notoc" <.> "html"
 

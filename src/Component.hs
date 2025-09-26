@@ -193,7 +193,8 @@ viewPage fmt m@Model{..} =
 
     viewTop = 
       div_ []
-        [ mkLink ActionSwitchSummary [ img_ [ src_ (mkStaticUri "icon-toc.jpg"), height_ "20" ] ]
+        -- [ mkLink ActionSwitchSummary [ img_ [ src_ (mkStaticUri "icon-toc.jpg"), height_ "20" ] ]
+        [ a_ [ onClick ActionSwitchSummary ] [ img_ [ src_ (mkStaticUri "icon-toc.jpg"), height_ "20" ] ]
         , span_ 
             [ CSS.style_ 
               [ CSS.fontWeight "bold"
@@ -238,7 +239,8 @@ viewNav Formatter{..} Model{..} =
 
 defFormatter :: Formatter Model Action
 defFormatter = Formatter
-  { _fmtChapterLink = mkLink . ActionAskPage True . ms
+  { _fmtChapterLink = \url views -> 
+      a_ [ onClick (ActionAskPage True $ ms url), CSS.style_ chapterLinkCSS ] views
   , _fmtCodeBlock = \langClass ns ->
       pre_ 
         [ class_ langClass
@@ -257,16 +259,11 @@ defFormatter = Formatter
   , _fmtNavPageElt = \_ elt -> elt
   }
 
-mkLink :: action -> [View model action] -> View model action
-mkLink action =
-  a_ 
-    [ onClick action
-    , CSS.style_ 
-      [ CSS.textDecoration "underline blue"
-      , CSS.color #0000FF
-      , CSS.cursor "pointer" 
-      ]
-    ]
+chapterLinkCSS =
+  [ CSS.textDecoration "underline blue"
+  , CSS.color #0000FF
+  , CSS.cursor "pointer" 
+  ]
 
 docTitle :: MisoString
 docTitle = "MisoDoc2"

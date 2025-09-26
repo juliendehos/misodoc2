@@ -2,16 +2,11 @@
 
 TODO
 
-- render: 
-    - show/hide summary
-
+- render: show/hide summary
+- docker
 - book
 - README
 
-
-BUGS?
-
-- Component's styles/scripts are ignored in Render
 
 ## Build and run server:
 
