@@ -1,36 +1,47 @@
 
 # Usage
 
-## How to use MisoDoc?
+## What does a MisoDoc2's documentation look like?
 
-Don't.
+Well, you are reading one, actually. :scream:
 
-MisoDoc dynamically renders static MD files, which is probably never a good
-idea. :sweat_smile:
-
-However, if you really want to use it, you have to:
-
-- build the web app (see the [github
-  repo](https://github.com/juliendehos/misodoc));
-
-- write your MD files in the `book` folder (it must contain a `summary.md` file
-  that links to the other files);
-
-- deploy everything in a `public` folder and run a HTTP server.
-
-Technically, we could simply write the MD files somewhere and have the MisoDoc
-app get and render these files.
-
-## What's in the web app?
-
-Well, you are using it, actually. :scream:
-
-On the left side, you have the summary, where you can choose the file to
-render, on the right side. You also have three icons, at the bottom of the
+On the left side, you have the summary panel, where you can choose the file to
+display on the right side. You also have three icons, at the bottom of the
 page, to go to the previous page, to the top of the current page or to the next
-page.
+page. Finally, at the top of the page, you can click on the first icon to
+show/hide the summary panel. 
 
-Finally, at the top of the page, you can click on the first icon to show/hide
-the summary. There is also a second icon but you probably don't want to use it.
-You've been warned.
+
+## How to use MisoDoc2?
+
+- Create a `book` folder containing a `summary.md` file and the `static` folder
+  provided by MisoDoc2 (see the [misodoc2/book
+  example](https://github.com/juliendehos/misodoc2/tree/main/book))
+
+- Run the MisoDoc2 server, for example using the docker image:
+
+    ```
+    docker run --rm -it -p 3000:3000 -v ./book:/book juliendehos/misodoc2:serve
+    ```
+
+- Open a browser and go to `localhost:3000`.
+
+- Edit/add your files in the `book` folder. You can see the rendered
+  documentation in the browser. Add links to your MD files in the `summary.md`
+  file to include them in the summary panel. 
+
+- When you are satisfied with your documentation, you can generate static HTML
+  files, for example using the docker image:
+
+    ```
+    docker run --rm -it -v ./book:/book -v ./output:/output juliendehos/misodoc2:render
+    ```
+
+And that's it. :rocket:
+
+
+## How to customize a MisoDoc2's documentation?
+
+MisoDoc2 is still a work-in-progress and has a lot of room for improvement. So
+you will likely need to modify the code and build your own version of it.
 

@@ -1,7 +1,7 @@
 
 # CommonMark
 
-MisoDoc supports the [CommonMark](https://commonmark.org/) specification.
+MisoDoc2 supports the [CommonMark](https://commonmark.org/) specification.
 
 You have everything you would expect from basic Markdown, like *italic*,
 **bold**, [links](intro.md).

@@ -1,12 +1,12 @@
 
 # Extensions
 
-MisoDoc also supports some MarkDown extensions.
+MisoDoc2 also supports some MarkDown extensions.
 
 
 ## Autolinks
 
-<https://github.com/juliendehos/misodoc>
+<https://github.com/juliendehos/misodoc2>
 
 
 ## Emojis
@@ -58,7 +58,7 @@ build](https://highlightjs.org/download) of highlightjs.
 
 ## Math
 
-MisoDoc can render math equations, using [KaTeX](https://katex.org/). 
+MisoDoc2 can render math equations, using [KaTeX](https://katex.org/). 
 
 If you write `$x = \sqrt{42}$`, you get $x = \sqrt{42}$.
 
