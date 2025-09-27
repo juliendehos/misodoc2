@@ -57,8 +57,9 @@ instance ToHtml Page where
 -- args
 -------------------------------------------------------------------------------
 
-newtype RenderingArgs = RenderingArgs
+data RenderingArgs = RenderingArgs
   { _outputPath :: FilePath
+  , _inputPath :: FilePath
   }
 
 -------------------------------------------------------------------------------
@@ -67,12 +68,11 @@ newtype RenderingArgs = RenderingArgs
 
 runRendering :: RenderingArgs -> IO ()
 runRendering RenderingArgs{..} = do
+  putStrLn $ "INPUT: " <> _inputPath
   putStrLn $ "OUTPUT: " <> _outputPath
 
-  -- copy "book" to output path
-  outputExists <- testdir _outputPath
-  when outputExists $ rmtree _outputPath
-  cptreeL "book" _outputPath
+  -- copy input path to output path
+  cptreeL _inputPath _outputPath
 
   let summaryFp = _outputPath </> fromMisoString summaryMd
   rSummary <- doSummary summaryFp
