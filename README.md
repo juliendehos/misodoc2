@@ -9,6 +9,8 @@ final doc).
 
 See the [MisoDoc2 documentation](https://juliendehos.github.io//misodoc2).
 
+![](demo-misodoc2.gif)
+
 
 ## Run MisoDoc2, using docker images
 
